@@ -2,6 +2,9 @@ package io.quarkus.test.extractor.project.writer;
 
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
+import io.quarkus.test.extractor.project.result.TestModuleProject;
+import io.quarkus.test.extractor.utils.MavenUtils;
+import org.apache.maven.model.Model;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -62,6 +65,11 @@ final class ProjectWriterImpl implements ProjectWriter {
     private void createTestModuleFrom(Project project) {
         createTestModuleDirectory(project);
         addToParentPomModel(project);
+        Model testModel = TestModuleProject.create(project);
+        Path testModelPath = TARGET_DIR.resolve(project.targetRelativePath());
+        MavenUtils.writeMavenModel(testModel, testModelPath);
+
+        // FIXME: drop following
         // create pom
         // - resolve all dependencies
         //   - resolve non-platform dependencies and put them to the parent properties && dependency management (add comment that lists which modules need it)
@@ -71,8 +79,7 @@ final class ProjectWriterImpl implements ProjectWriter {
         //    - differs between ITs and extension tests
         // -
         // copy files
-        // FIXME: DROP ME!
-        project.properties();
+
 
         // FIXME: how to handle submodules???
 

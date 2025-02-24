@@ -17,7 +17,8 @@ public final class ParentProject {
     }
 
     public static void writeTo(Path targetDir) {
-       MavenUtils.writeMavenModel(MAVEN_MODEL, getParentPomFile(targetDir));
+       MavenUtils.writeMavenModel(MAVEN_MODEL, targetDir);
+       MavenUtils.replacePomPlaceholders(targetDir);
     }
 
     public static void setQuarkusVersion(String version) {
@@ -51,9 +52,5 @@ public final class ParentProject {
 
     private static Profile findProfileByName(String profile) {
         return MAVEN_MODEL.getProfiles().stream().filter(p -> profile.equals(p.getId())).findFirst().orElseThrow();
-    }
-
-    private static File getParentPomFile(Path targetDir) {
-        return targetDir.resolve(MavenUtils.POM_XML).toFile();
     }
 }

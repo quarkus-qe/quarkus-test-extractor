@@ -1,23 +1,37 @@
 package io.quarkus.test.extractor.project.builder;
 
-import io.quarkus.test.extractor.utils.MavenUtils;
+import io.quarkus.test.extractor.utils.ConstantUtils;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import static io.quarkus.test.extractor.utils.ConstantUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.utils.ConstantUtils.INTEGRATION_TESTS;
-import static io.quarkus.test.extractor.utils.ConstantUtils.isExtensionDeploymentModule;
+import static io.quarkus.test.extractor.utils.ConstantUtils.dropDeploymentPostfix;
 import static io.quarkus.test.extractor.utils.MavenUtils.isTestModuleProperty;
 
-record ProjectImpl(MavenProject mavenProject, String relativePath) implements Project {
+record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExtensionDeploymentModule)
+        implements Project {
 
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
 
+    private ProjectImpl(MavenProject mavenProject, String relativePath) {
+        this(mavenProject, relativePath, ConstantUtils.isExtensionDeploymentModule(relativePath));
+    }
+
     ProjectImpl(MavenProject mavenProject) {
         this(mavenProject, extractRelativePath(mavenProject));
+    }
+
+    @Override
+    public String name() {
+        if (isExtensionDeploymentModule) {
+            return dropDeploymentPostfix(mavenProject.getName());
+        }
+        return mavenProject.getName();
     }
 
     @Override
@@ -27,12 +41,15 @@ record ProjectImpl(MavenProject mavenProject, String relativePath) implements Pr
 
     @Override
     public String artifactId() {
+        if (isExtensionDeploymentModule) {
+            return dropDeploymentPostfix(mavenProject.getArtifactId());
+        }
         return mavenProject.getArtifactId();
     }
 
     @Override
     public String targetRelativePath() {
-        return isExtensionDeploymentModule(relativePath()) ?
+        return isExtensionDeploymentModule ?
                 // extensions/vertx-http/deployment -> extensions/vertx-http
                 extractRelativePath(mavenProject.getParent())
                 : relativePath;
@@ -40,23 +57,22 @@ record ProjectImpl(MavenProject mavenProject, String relativePath) implements Pr
 
     @Override
     public boolean isDirectSubModule() {
-        if (isExtensionDeploymentModule(relativePath())) {
+        if (isExtensionDeploymentModule) {
             return true;
         }
         // integration tests - then we want to differ between integration test module
         // and its submodules
-        return relativePath().split("\\\\" + File.separator).length == 2;
+        return relativePath.split(Pattern.quote(File.separator)).length == 2;
     }
 
     @Override
     public boolean containsTests() {
         // ATM tests which are testing Quarkus application (not individual classes)
         // are present in extension deployment modules and integration test modules
-        String relativePath = relativePath();
-        if (relativePath.startsWith(INTEGRATION_TESTS + File.separator)) {
+        if (isExtensionDeploymentModule) {
             return true;
         }
-        return isExtensionDeploymentModule(relativePath);
+        return relativePath.startsWith(INTEGRATION_TESTS + File.separator);
     }
 
     @Override
@@ -93,21 +109,4 @@ record ProjectImpl(MavenProject mavenProject, String relativePath) implements Pr
         return CURRENT_DIR.relativize(mavenProjectPath).toString();
     }
 
-    // TODO: write operation must be synchronized!!!
-    // {{test-module-name-id}}
-    // {{test-module-artifact-id}}
-    // {{quarkus-branch}}
-    // {{quarkus-stream}}
-    // {{must-be-replaced}}
-    // TODO: generate into one big project with flat structure?
-    // TODO: properties to keep up to date:
-    // USE-EXTRACTED-PROPERTIES -> ''
-    // $REPLACE{quarkus.platform.group-id}
-    // $REPLACE{quarkus.platform.artifact-id}
-    // $REPLACE{quarkus.platform.version}
-    // $REPLACE{surefire-plugin.version}
-    // $REPLACE{maven.home}
-    // $REPLACE{project.build.directory}
-    // $REPLACE{project.build.finalName}
-    // $REPLACE{compiler-plugin.version}
 }

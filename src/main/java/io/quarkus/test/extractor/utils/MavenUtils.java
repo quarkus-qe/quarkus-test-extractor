@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,19 +51,12 @@ public final class MavenUtils {
         // utils
     }
 
-    public static void writeMavenModel(Model model, File targetPom) {
-        try (var newFileOS = new FileOutputStream(targetPom)) {
-            new MavenXpp3Writer().write(newFileOS, model);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save '%s' POM file".formatted(targetPom), e);
-        }
-        try {
-            String pomContent = Files.readString(targetPom.toPath());
-            pomContent = pomContent.replaceAll(MAVEN_PROPERTY_PREFIX, PROPERTY_START);
-            Files.writeString(targetPom.toPath(), pomContent, StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to remove Maven property placeholder from POM file", e);
-        }
+    public static void writeMavenModel(Model model, Path targetDir) {
+        writeMavenModel(model, getPomFile(targetDir));
+    }
+
+    public static void replacePomPlaceholders(Path targetDir) {
+        replaceParentPomPlaceholders(getPomFile(targetDir));
     }
 
     public static boolean isTestModuleProperty(String propertyName, String propertyValue) {
@@ -91,5 +85,27 @@ public final class MavenUtils {
 
     private static InputStream getResourceAsStream(String resourceName) {
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
+    }
+
+    private static File getPomFile(Path targetDir) {
+        return targetDir.resolve(MavenUtils.POM_XML).toFile();
+    }
+
+    private static void writeMavenModel(Model model, File targetPom) {
+        try (var newFileOS = new FileOutputStream(targetPom)) {
+            new MavenXpp3Writer().write(newFileOS, model);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save '%s' POM file".formatted(targetPom), e);
+        }
+    }
+
+    private static void replaceParentPomPlaceholders(File targetPom) {
+        try {
+            String pomContent = Files.readString(targetPom.toPath());
+            pomContent = pomContent.replaceAll(MAVEN_PROPERTY_PREFIX, PROPERTY_START);
+            Files.writeString(targetPom.toPath(), pomContent, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to remove Maven property placeholder from POM file", e);
+        }
     }
 }

@@ -10,6 +10,8 @@ public sealed interface Project permits ProjectImpl {
         return new ProjectImpl(project);
     }
 
+    String name();
+
     String version();
 
     String artifactId();
