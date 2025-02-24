@@ -7,20 +7,25 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static io.quarkus.test.extractor.utils.ConstantUtils.EXTENSIONS;
+import static io.quarkus.test.extractor.utils.ConstantUtils.INTEGRATION_TESTS;
+import static io.quarkus.test.extractor.utils.ConstantUtils.WRITE_TO;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
-    private static final String EXTENSIONS = "extensions";
-    private static final String INTEGRATION_TESTS = "integration-tests";
-    private static final Path TARGET_DIR = Path.of(System.getProperty("write-to"));
+    private static final String QUARKUS_BUILD_PARENT = "quarkus-build-parent";
+    private static final Path TARGET_DIR = Path.of(System.getProperty(WRITE_TO));
     private static final Path EXTENSION_MODULES_PATH = TARGET_DIR.resolve(EXTENSIONS);
     private static final Path IT_MODULES_PATH = TARGET_DIR.resolve(INTEGRATION_TESTS);
     private static final ProjectWriter INSTANCE = new ProjectWriterImpl();
-    private final AtomicInteger counter;
+    private final AtomicBoolean isFirstModule;
+    private volatile boolean quarkusBuildParentDetected;
 
     private ProjectWriterImpl() {
-        this.counter = new AtomicInteger(0);
+        this.isFirstModule = new AtomicBoolean(true);
+        this.quarkusBuildParentDetected = false;
     }
 
     static ProjectWriter getInstance() {
@@ -33,7 +38,9 @@ final class ProjectWriterImpl implements ProjectWriter {
             createDirectoryStructure();
         }
 
-        if (containsTests(project)) {
+        if (isQuarkusBuildParent(project)) {
+            copyQuarkusBuildParentToOurParentProject(project);
+        } else if (project.containsTests()) {
             createTestModuleFrom(project);
         }
 
@@ -42,29 +49,43 @@ final class ProjectWriterImpl implements ProjectWriter {
         }
     }
 
+    private void copyQuarkusBuildParentToOurParentProject(Project project) {
+        quarkusBuildParentDetected = true;
+        ParentProject.addProperties(project.properties());
+        ParentProject.setQuarkusVersion(project.version());
+    }
+
+    private boolean isQuarkusBuildParent(Project project) {
+        return !quarkusBuildParentDetected && QUARKUS_BUILD_PARENT.equals(project.artifactId());
+    }
+
     private void createTestModuleFrom(Project project) {
         createTestModuleDirectory(project);
         addToParentPomModel(project);
+        // create pom
+        // - resolve all dependencies
+        //   - resolve non-platform dependencies and put them to the parent properties && dependency management (add comment that lists which modules need it)
+        // - resolve properties like those used by surefire etc. and probably copy properties as well? unclear!
+        // - copy plugins
+        // - copy dependencies:
+        //    - differs between ITs and extension tests
+        // -
+        // copy files
+        // FIXME: DROP ME!
+        project.properties();
+
         // FIXME: how to handle submodules???
+
     }
 
     private boolean isFirstModule() {
-        return counter.incrementAndGet() == 1;
-    }
-
-    private static boolean containsTests(Project project) {
-        return project.relativePath().startsWith(EXTENSIONS)
-                || project.relativePath().startsWith(INTEGRATION_TESTS);
+        return isFirstModule.compareAndSet(true, false);
     }
 
     private static void addToParentPomModel(Project project) {
         if (project.isDirectSubModule()) {
-            ParentProject.addTestModule(project.relativePath(), getProfileName(project));
+            ParentProject.addTestModule(project.targetRelativePath(), project.targetProfileName());
         }
-    }
-
-    private static String getProfileName(Project project) {
-        return project.relativePath().startsWith(EXTENSIONS) ? EXTENSIONS : INTEGRATION_TESTS;
     }
 
     private static void createDirectoryStructure() {

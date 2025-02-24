@@ -3,19 +3,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.quarkus.qe.tests</groupId>
     <artifactId>quarkus-main-tests</artifactId>
-    <version>{{quarkus-stream}}-SNAPSHOT</version>
+    <version>{{quarkus-project-version}}</version>
     <packaging>pom</packaging>
     <name>Quarkus Main project tests</name>
-    <description>Contains tests extracted from Quarkus main project branch {{quarkus-branch}}</description>
-
+    <description>Contains tests extracted from Quarkus main project</description>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <skipITs>true</skipITs>
-        <!-- todo -->
-        <maven.compiler.release>21</maven.compiler.release>
-        <compiler-plugin.version>3.13.0</compiler-plugin.version>
+        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.version>{{quarkus-project-version}}</quarkus.platform.version>
     </properties>
 
     <dependencyManagement>
@@ -47,7 +43,10 @@
         <profile>
             <id>extensions</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>extensions</name>
+                    <value>true</value>
+                </property>
             </activation>
             <modules>
                 <!-- to be generated -->
@@ -56,7 +55,10 @@
         <profile>
             <id>integration-tests</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>integration-tests</name>
+                    <value>true</value>
+                </property>
             </activation>
             <modules>
                 <!-- to be generated -->
@@ -81,7 +83,7 @@
             <plugin>
                 <groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                <version>$USE-EXTRACTED-PROPERTIES{quarkus-maven-plugin.version}</version>
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -96,14 +98,14 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{compiler-plugin.version}</version>
+                <version>$USE-EXTRACTED-PROPERTIES{version.compiler.plugin}</version>
                 <configuration>
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{surefire-plugin.version}</version>
+                <version>$USE-EXTRACTED-PROPERTIES{version.surefire.plugin}</version>
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -113,7 +115,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{surefire-plugin.version}</version>
+                <version>$USE-EXTRACTED-PROPERTIES{version.failsafe.plugin}</version>
                 <executions>
                     <execution>
                         <goals>

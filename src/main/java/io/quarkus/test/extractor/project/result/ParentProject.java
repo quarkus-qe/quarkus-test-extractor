@@ -6,6 +6,7 @@ import org.apache.maven.model.Profile;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Properties;
 
 public final class ParentProject {
 
@@ -17,6 +18,35 @@ public final class ParentProject {
 
     public static void writeTo(Path targetDir) {
        MavenUtils.writeMavenModel(MAVEN_MODEL, getParentPomFile(targetDir));
+    }
+
+    public static void setQuarkusVersion(String version) {
+        MAVEN_MODEL.setVersion(version);
+        MAVEN_MODEL.getProperties().put("quarkus.platform.version", version);
+    }
+
+    public static void addProperties(Properties properties) {
+        if (MAVEN_MODEL.getProperties() == null) {
+            MAVEN_MODEL.setProperties(new Properties());
+        }
+        if (properties != null) {
+            properties.forEach((k, v) -> {
+                if (MavenUtils.isNotIgnoredProperty((String) k)) {
+                    MAVEN_MODEL.getProperties().put(k, v);
+                }
+            });
+        }
+    }
+
+    public static boolean isPropertyDefinedInParentPom(String propertyName, String propertyValue) {
+        if (MAVEN_MODEL.getProperties() == null) {
+            return false;
+        }
+        String actualValue = MAVEN_MODEL.getProperties().getProperty(propertyName);
+        if (actualValue == null) {
+            return false;
+        }
+        return actualValue.equals(propertyValue);
     }
 
     private static Profile findProfileByName(String profile) {
