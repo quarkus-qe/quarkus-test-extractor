@@ -3,9 +3,12 @@ package io.quarkus.test.extractor.project.builder;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
+import org.apache.maven.model.Build;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.Profile;
 import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
 
@@ -14,8 +17,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static io.quarkus.test.extractor.project.helper.ExtractionSummary.addNotManagedDependency;
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
@@ -42,6 +45,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         implements Project {
 
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
+    // ignoring 'maven-compiler-plugin' could be an issue as sometimes there is a special configuration / execution
+    // let's reevaluate it case by case when we experience issue so that we understand the differences
+    private static final Set<String> IGNORED_PLUGINS = Set.of("maven-compiler-plugin", "forbiddenapis",
+            "maven-jar-plugin", "templating-maven-plugin", "quarkus-maven-plugin", "maven-enforcer-plugin",
+            "impsort-maven-plugin");
 
     private ProjectImpl(MavenProject mavenProject, String relativePath) {
         this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath));
@@ -49,6 +57,25 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     ProjectImpl(MavenProject mavenProject) {
         this(mavenProject, extractRelativePath(mavenProject));
+    }
+
+    @Override
+    public List<Profile> profiles() {
+        List<Profile> profiles = new ArrayList<>();
+        mavenProject.getOriginalModel().getProfiles().forEach(profile -> profiles.add(profile.clone()));
+        return List.copyOf(profiles);
+    }
+
+    @Override
+    public Build build() {
+        if (mavenProject.getOriginalModel().getBuild() == null) {
+            return null;
+        }
+        Build build = mavenProject.getOriginalModel().getBuild().clone();
+        if (build.getPlugins() != null) {
+            build.getPlugins().removeIf(plugin -> IGNORED_PLUGINS.contains(plugin.getArtifactId()));
+        }
+        return build;
     }
 
     @Override

@@ -16,6 +16,9 @@
         <quarkus.community.group-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</quarkus.community.group-id>
         <quarkus.community.artifact-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.artifact-id}</quarkus.community.artifact-id>
         <quarkus.community.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</quarkus.community.version>
+        <!-- our executors supports linux containers, therefore activate test profiles that require them -->
+        <test-containers>true</test-containers>
+        <start-containers>true</start-containers>
     </properties>
 
     <dependencyManagement>

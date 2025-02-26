@@ -25,6 +25,12 @@ public final class TestModuleProject {
         if (dependencyManagement != null) {
             model.setDependencyManagement(dependencyManagement);
         }
+        model.setBuild(project.build());
+        model.setProfiles(project.profiles());
+
+        // FIXME: handle different packaging!!!
+        // FIXME: handle modules!!!
+
         return model;
     }
 }

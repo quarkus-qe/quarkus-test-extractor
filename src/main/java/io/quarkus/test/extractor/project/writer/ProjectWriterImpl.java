@@ -91,21 +91,6 @@ final class ProjectWriterImpl implements ProjectWriter {
         Model testModel = TestModuleProject.create(project);
         Path testModelPath = getModelPath(project);
         createMavenModule(project, testModel, testModelPath);
-
-        // FIXME: drop following
-        // create pom
-        // - resolve all dependencies
-        //   - resolve non-platform dependencies and put them to the parent properties && dependency management (add comment that lists which modules need it)
-        // - resolve properties like those used by surefire etc. and probably copy properties as well? unclear!
-        // - copy plugins
-        // - copy dependencies:
-        //    - differs between ITs and extension tests
-        // -
-        // copy files
-
-
-        // FIXME: how to handle submodules???
-
     }
 
     private static void createMavenModule(Project project, Model testModel, Path testModelPath) {
