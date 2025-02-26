@@ -1,8 +1,10 @@
 package io.quarkus.test.extractor.project.result;
 
 import io.quarkus.test.extractor.project.builder.Project;
-import io.quarkus.test.extractor.utils.MavenUtils;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
+
+import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
 
 public final class TestModuleProject {
 
@@ -12,9 +14,13 @@ public final class TestModuleProject {
         Model model = MAVEN_MODEL.clone();
         model.setVersion(project.version());
         model.getParent().setVersion(project.version());
+        model.getParent().setRelativePath(computeRelativePath(project));
         model.setArtifactId(project.artifactId());
         model.setName(project.name());
         model.setProperties(project.properties());
+        model.setDependencies(project.dependencies());
+        model.setRepositories(project.repositories());
+        model.setPluginRepositories(project.pluginRepositories());
         return model;
     }
 }

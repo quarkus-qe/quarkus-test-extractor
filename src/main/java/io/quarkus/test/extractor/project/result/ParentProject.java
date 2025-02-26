@@ -1,10 +1,9 @@
 package io.quarkus.test.extractor.project.result;
 
-import io.quarkus.test.extractor.utils.MavenUtils;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Properties;
 
@@ -18,7 +17,6 @@ public final class ParentProject {
 
     public static void writeTo(Path targetDir) {
        MavenUtils.writeMavenModel(MAVEN_MODEL, targetDir);
-       MavenUtils.replacePomPlaceholders(targetDir);
     }
 
     public static void setQuarkusVersion(String version) {

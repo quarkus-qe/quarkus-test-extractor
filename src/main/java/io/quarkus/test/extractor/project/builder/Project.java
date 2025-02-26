@@ -1,7 +1,11 @@
 package io.quarkus.test.extractor.project.builder;
 
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
 
+import java.util.List;
 import java.util.Properties;
 
 public sealed interface Project permits ProjectImpl {
@@ -9,6 +13,12 @@ public sealed interface Project permits ProjectImpl {
     static Project extract(MavenProject project) {
         return new ProjectImpl(project);
     }
+
+    List<Dependency> dependencies();
+
+    List<Repository> repositories();
+
+    List<Repository> pluginRepositories();
 
     String name();
 
@@ -34,6 +44,10 @@ public sealed interface Project permits ProjectImpl {
      */
     String targetProfileName();
 
+    /**
+     * @return Original model in case this project needs to be copies 'as is'.
+     */
+    Model originalModel();
     // TODO list here:
     //   - modules
     //   - plugin management??

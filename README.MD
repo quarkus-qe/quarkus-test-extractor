@@ -6,26 +6,42 @@ It is useful if you need to verify that your build of Quarkus works as expected.
 
 # Prerequisites
 
-Installed Maven 3.9.9 or newer 3.X version.
+Installed Git and Maven 3.9.9 or newer 3.X version. Only supported OS is Fedora / RHEL.
+If you plan to push extracted tests to the Quarkus QE Extracted Tests project, valid GitHub token must be available.
 
-# Build this plugin
-
-Run following commands:
-
-```bash
-git clone git@github.com:quarkus-qe/quarkus-test-extractor.git
-cd quarkus-test-extractor
-mvn clean install
-```
-
-# How to use this plugin
-
-Run following commands (use any branch):
+# Use the `extract-tests.sh` script to extract tests
 
 ```bash
-git clone git@github.com:quarkusio/quarkus.git -b main
-cd quarkus
-mvn io.quarkus.qe:quarkus-test-extractor:1.0-SNAPSHOT:extract-tests -Dwrite-to=/tmp/test-1
+wget -q https://raw.githubusercontent.com/quarkus-qe/quarkus-test-extractor/refs/heads/main/extract-tests.sh
+chmod +x extract-tests.sh
+./extract-tests.sh
 ```
 
-And find your tests in the `/tmp/test-1` directory.
+## What the `extract-tests.sh` script can do
+
+* Clone this project (skipped when the plugin artifacts are detected)
+* Build this project (skipped when the plugin artifacts are detected)
+* Clone Quarkus main project (skipped when Quarkus project directory contains a POM file)
+* Go to Quarkus main project (skipped when Quarkus project directory contains a POM file)
+* Extract tests from extensions deployment modules and integration test modules
+* Summarize extraction, e.g. what dependency versions are hardcoded because they are not managed by Quarkus BOM
+* If explicitly enabled, push tests to Quarkus QE Extracted Tests project:
+  * clone the target project
+  * checkout specified branch (create it if not exist)
+  * delete all existing files in the project and replace them with newly extracted tests
+  * commit and open PR to the Quarkus QE Extracted Tests project
+
+## Available script options
+
+The `extract-tests.sh` script accepts following options:
+
+| Option | Supported values        | Description                               | Default value                                             |
+|--------|-------------------------|-------------------------------------------|-----------------------------------------------------------|
+| -l     | HTTPS link              | Quarkus project URL                       | https://github.com/quarkusio/quarkus.git                  |
+| -b     | existing branch         | Quarkus project branch                    | `main`                                                    |
+| -d     | path to directory       | Quarkus project directory                 | `.`                                                       |
+| -v     | no values               | Log all messages like Quarkus build       | silent                                                    |
+| -t     | path to directory       | Where to put extracted tests              | `/tmp/extracted-tests`                                    |
+| -u     | HTTPS link              | Quarkus QE Extracted Tests project URL    | https://github.com/quarkus-qe/quarkus-extracted-tests.git |
+| -n     | branch (existing / new) | Quarkus QE Extracted Tests target branch  | value of the `-b` option                                  |
+| -e     | no values               | If to push extracted tests to the project | not pushed                                                |

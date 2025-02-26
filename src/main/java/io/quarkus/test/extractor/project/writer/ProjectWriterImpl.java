@@ -1,25 +1,32 @@
 package io.quarkus.test.extractor.project.writer;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
-import io.quarkus.test.extractor.utils.MavenUtils;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.quarkus.test.extractor.utils.ConstantUtils.EXTENSIONS;
-import static io.quarkus.test.extractor.utils.ConstantUtils.INTEGRATION_TESTS;
-import static io.quarkus.test.extractor.utils.ConstantUtils.WRITE_TO;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.TARGET_DIR;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
+    // super special cases that are not really a test modules, but we still need them
+    private static final Set<String> COPY_AS_IS_ARTIFACT_IDS = Set.of("quarkus-integration-test-class-transformer-parent",
+            "quarkus-integration-test-class-transformer-deployment", "quarkus-security-test-utils",
+            "quarkus-integration-test-class-transformer", "quarkus-arc-test-supplement");
     private static final String QUARKUS_BUILD_PARENT = "quarkus-build-parent";
-    private static final Path TARGET_DIR = Path.of(System.getProperty(WRITE_TO));
     private static final Path EXTENSION_MODULES_PATH = TARGET_DIR.resolve(EXTENSIONS);
     private static final Path IT_MODULES_PATH = TARGET_DIR.resolve(INTEGRATION_TESTS);
     private static final ProjectWriter INSTANCE = new ProjectWriterImpl();
@@ -43,13 +50,36 @@ final class ProjectWriterImpl implements ProjectWriter {
 
         if (isQuarkusBuildParent(project)) {
             copyQuarkusBuildParentToOurParentProject(project);
+        } else if (copyAsIs(project)) {
+            copyWithoutChanges(project);
         } else if (project.containsTests()) {
             createTestModuleFrom(project);
         }
 
         if (isLastModule(project)) {
             ParentProject.writeTo(TARGET_DIR);
+            ExtractionSummary.createAndStoreSummary();
         }
+    }
+
+    private static void copyWithoutChanges(Project project) {
+        Model model = project.originalModel();
+        if (project.isDirectSubModule()) {
+            Parent parent = model.getParent();
+            parent.setGroupId("io.quarkus");
+            parent.setArtifactId("quarkus-main-tests");
+            parent.setVersion(project.version());
+            parent.setRelativePath(computeRelativePath(project));
+        }
+        createMavenModule(project, model, getModelPath(project));
+    }
+
+    private static Path getModelPath(Project project) {
+        return TARGET_DIR.resolve(project.targetRelativePath());
+    }
+
+    private static boolean copyAsIs(Project project) {
+        return COPY_AS_IS_ARTIFACT_IDS.contains(project.artifactId());
     }
 
     private void copyQuarkusBuildParentToOurParentProject(Project project) {
@@ -63,11 +93,9 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private void createTestModuleFrom(Project project) {
-        createTestModuleDirectory(project);
-        addToParentPomModel(project);
         Model testModel = TestModuleProject.create(project);
-        Path testModelPath = TARGET_DIR.resolve(project.targetRelativePath());
-        MavenUtils.writeMavenModel(testModel, testModelPath);
+        Path testModelPath = getModelPath(project);
+        createMavenModule(project, testModel, testModelPath);
 
         // FIXME: drop following
         // create pom
@@ -83,6 +111,12 @@ final class ProjectWriterImpl implements ProjectWriter {
 
         // FIXME: how to handle submodules???
 
+    }
+
+    private static void createMavenModule(Project project, Model testModel, Path testModelPath) {
+        createModuleDirectory(project);
+        addToParentPomModel(project);
+        MavenUtils.writeMavenModel(testModel, testModelPath);
     }
 
     private boolean isFirstModule() {
@@ -111,9 +145,9 @@ final class ProjectWriterImpl implements ProjectWriter {
         return "quarkus-documentation".equals(project.artifactId());
     }
 
-    private static void createTestModuleDirectory(Project project) {
+    private static void createModuleDirectory(Project project) {
         try {
-            Files.createDirectories(TARGET_DIR.resolve(project.relativePath()));
+            Files.createDirectories(TARGET_DIR.resolve(project.targetRelativePath()));
         } catch (IOException e) {
             throw new RuntimeException("Failed to create test module directory", e);
         }

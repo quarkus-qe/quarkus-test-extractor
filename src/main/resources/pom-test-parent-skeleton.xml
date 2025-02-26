@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.quarkus.qe.tests</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-main-tests</artifactId>
     <version>{{quarkus-project-version}}</version>
     <packaging>pom</packaging>
@@ -12,6 +12,10 @@
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>{{quarkus-project-version}}</quarkus.platform.version>
+        <!-- community dependencies exist because some artifacts won't exist with the product version -->
+        <quarkus.community.group-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</quarkus.community.group-id>
+        <quarkus.community.artifact-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.artifact-id}</quarkus.community.artifact-id>
+        <quarkus.community.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</quarkus.community.version>
     </properties>
 
     <dependencyManagement>
@@ -22,6 +26,28 @@
                 <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- integration test module used by other integration tests  -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer-deployment</artifactId>
+                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer</artifactId>
+                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
+            </dependency>
+            <!-- test extensions used by other extensions but not managed by Quarkus BOM or in the central repo  -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-arc-test-supplement</artifactId>
+                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-security-test-utils</artifactId>
+                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

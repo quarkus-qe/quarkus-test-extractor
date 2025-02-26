@@ -1,7 +1,10 @@
-package io.quarkus.test.extractor.utils;
+package io.quarkus.test.extractor.project.utils;
 
+import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Repository;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 
@@ -18,10 +21,16 @@ import java.util.Set;
 public final class MavenUtils {
 
     public static final String POM_XML = "pom.xml";
+    public static final String TEST_SCOPE = "test";
+    public static final String COMPILE_SCOPE = "compile";
+    public static final String QUARKUS_PLATFORM_VERSION = "${quarkus.platform.version}";
+    public static final String QUARKUS_COMMUNITY_VERSION = "${quarkus.community.version}";
     // used to avoid automatic substitution when we don't want it
     private static final String MAVEN_PROPERTY_PREFIX = "\\$USE-EXTRACTED-PROPERTIES\\{";
     private static final String PROPERTY_START = "\\${";
     private static final Set<String> IGNORED_PROPERTIES;
+    private static final String TEST_JAR = "test-jar";
+    private static final String CENTRAL_REPOSITORY_ID = "central";
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise
@@ -53,10 +62,7 @@ public final class MavenUtils {
 
     public static void writeMavenModel(Model model, Path targetDir) {
         writeMavenModel(model, getPomFile(targetDir));
-    }
-
-    public static void replacePomPlaceholders(Path targetDir) {
-        replaceParentPomPlaceholders(getPomFile(targetDir));
+        MavenUtils.replacePomPlaceholders(targetDir);
     }
 
     public static boolean isTestModuleProperty(String propertyName, String propertyValue) {
@@ -74,6 +80,10 @@ public final class MavenUtils {
         return getMavenModel(getResourceAsStream(resourceName));
     }
 
+    private static void replacePomPlaceholders(Path targetDir) {
+        replacePomPlaceholders(getPomFile(targetDir));
+    }
+
     private static Model getMavenModel(InputStream is) {
         MavenXpp3Reader reader = new MavenXpp3Reader();
         try (is) {
@@ -87,7 +97,7 @@ public final class MavenUtils {
         return Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
     }
 
-    private static File getPomFile(Path targetDir) {
+    public static File getPomFile(Path targetDir) {
         return targetDir.resolve(MavenUtils.POM_XML).toFile();
     }
 
@@ -99,7 +109,7 @@ public final class MavenUtils {
         }
     }
 
-    private static void replaceParentPomPlaceholders(File targetPom) {
+    private static void replacePomPlaceholders(File targetPom) {
         try {
             String pomContent = Files.readString(targetPom.toPath());
             pomContent = pomContent.replaceAll(MAVEN_PROPERTY_PREFIX, PROPERTY_START);
@@ -107,5 +117,34 @@ public final class MavenUtils {
         } catch (IOException e) {
             throw new RuntimeException("Failed to remove Maven property placeholder from POM file", e);
         }
+    }
+
+    public static String getManagementKey(Dependency dependency) {
+        String fullManagementKey = dependency.getManagementKey();
+        // drop 'jar' from io.quarkus:vertx-http:jar
+        // why? some dependencies have like 'test-jar' type, and it confuses comparison,
+        // but I don't think it means that they are not in fact managed
+        return fullManagementKey.substring(0, fullManagementKey.lastIndexOf(':'));
+    }
+
+    public static boolean isTestJar(Dependency dependency) {
+        return TEST_JAR.equalsIgnoreCase(dependency.getType());
+    }
+
+    public static void setQuarkusPlatformVersion(Dependency dependency) {
+        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
+    }
+
+    public static void setQuarkusCommunityVersion(Dependency dependency) {
+        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.community.version}");
+    }
+
+    public static String computeRelativePath(Project project) {
+        int numberOfPathSeparators = (int) project.targetRelativePath().chars().filter(c -> c == File.separatorChar).count();
+        return (".." + File.separator).repeat(numberOfPathSeparators + 1);
+    }
+
+    public static boolean isNotCentralRepository(Repository repository) {
+        return !CENTRAL_REPOSITORY_ID.equalsIgnoreCase(repository.getId());
     }
 }
