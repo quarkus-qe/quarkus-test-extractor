@@ -2,6 +2,7 @@ package io.quarkus.test.extractor.project.writer;
 
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
+import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
@@ -79,6 +80,7 @@ final class ProjectWriterImpl implements ProjectWriter {
         quarkusBuildParentDetected = true;
         ParentProject.addProperties(project.properties());
         ParentProject.setQuarkusVersion(project.version());
+        QuarkusBuildParent.rememberDependencyManagement(project.dependencyManagement());
     }
 
     private boolean isQuarkusBuildParent(Project project) {

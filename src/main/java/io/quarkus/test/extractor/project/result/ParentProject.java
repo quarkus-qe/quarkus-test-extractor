@@ -3,6 +3,7 @@ package io.quarkus.test.extractor.project.result;
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 
@@ -67,4 +68,5 @@ public final class ParentProject {
     private static Profile findProfileByName(String profile) {
         return MAVEN_MODEL.getProfiles().stream().filter(p -> profile.equals(p.getId())).findFirst().orElseThrow();
     }
+
 }

@@ -21,6 +21,10 @@ public final class TestModuleProject {
         model.setDependencies(project.dependencies());
         model.setRepositories(project.repositories());
         model.setPluginRepositories(project.pluginRepositories());
+        var dependencyManagement = project.dependencyManagement();
+        if (dependencyManagement != null) {
+            model.setDependencyManagement(dependencyManagement);
+        }
         return model;
     }
 }

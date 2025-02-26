@@ -1,6 +1,7 @@
 package io.quarkus.test.extractor.project.builder;
 
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
@@ -13,6 +14,8 @@ public sealed interface Project permits ProjectImpl {
     static Project extract(MavenProject project) {
         return new ProjectImpl(project);
     }
+
+    DependencyManagement dependencyManagement();
 
     List<Dependency> dependencies();
 

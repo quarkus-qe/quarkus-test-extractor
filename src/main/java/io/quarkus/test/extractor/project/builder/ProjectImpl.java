@@ -1,11 +1,10 @@
 package io.quarkus.test.extractor.project.builder;
 
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
-import io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies;
-import io.quarkus.test.extractor.project.helper.QuarkusTestFramework;
-import io.quarkus.test.extractor.project.result.ParentProject;
+import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
@@ -16,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.quarkus.test.extractor.project.helper.ExtractionSummary.addNotManagedDependency;
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
@@ -49,6 +49,27 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     ProjectImpl(MavenProject mavenProject) {
         this(mavenProject, extractRelativePath(mavenProject));
+    }
+
+    @Override
+    public DependencyManagement dependencyManagement() {
+        if (!containsTests()) {
+            // don't care, we are not going to use it anyway
+            return mavenProject.getDependencyManagement();
+        }
+        DependencyManagement dependencyManagement = mavenProject.getOriginalModel().getDependencyManagement();
+        if (dependencyManagement == null || dependencyManagement.getDependencies() == null
+                || dependencyManagement.getDependencies().isEmpty()) {
+            return null;
+        }
+        List<Dependency> managedDependencies = dependencyManagement.getDependencies().stream()
+                .filter(QuarkusBuildParent::isNotManagedByBuildParent).toList();
+        if (!managedDependencies.isEmpty()) {
+            // really?? that is suspicious, let's add it to summary so that someone can inspect this fact manually
+            ExtractionSummary.addProjectWithDependencyManagement(dependencyManagement, this);
+            return dependencyManagement;
+        }
+        return null;
     }
 
     @Override

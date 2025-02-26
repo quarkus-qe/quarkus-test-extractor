@@ -4,6 +4,7 @@ import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Repository;
 
 import java.io.IOException;
@@ -24,12 +25,13 @@ public final class ExtractionSummary {
     private record UnmanagedDependencyKey(String managementKey, String version, boolean isTestJar) {
     }
     private record RepositoryKey(String name, String id, String url) {}
-    private record Usage(String projectId, String relativePath) {
-    }
+    private record Usage(String projectId, String relativePath) {}
+    private record DependencyManagementKey(Set<String> managementKeys, Usage usage) {}
     private static final String EXTRACTION_SUMMARY_FILE_NAME = "extraction-summary";
     private static final Map<UnmanagedDependencyKey, Set<Usage>> UNMANAGED_DEPENDENCIES = new ConcurrentHashMap<>();
     private static final Map<RepositoryKey, Set<Usage>> PROJECT_SPECIFIC_REPOSITORIES = new ConcurrentHashMap<>();
     private static final Map<RepositoryKey, Set<Usage>> PROJECT_SPECIFIC_PLUGIN_REPOSITORIES = new ConcurrentHashMap<>();
+    private static final Set<DependencyManagementKey> PROJECT_SPECIFIC_DEPENDING_MANAGEMENTS = new HashSet<>();
 
     private ExtractionSummary() {
     }
@@ -64,6 +66,14 @@ public final class ExtractionSummary {
         PROJECT_SPECIFIC_PLUGIN_REPOSITORIES.computeIfAbsent(key, k -> new HashSet<>()).add(usage);
     }
 
+    public static void addProjectWithDependencyManagement(DependencyManagement dependencyManagement, Project project) {
+        var managementKeys = dependencyManagement.getDependencies().stream().map(MavenUtils::getManagementKey)
+                .collect(Collectors.toUnmodifiableSet());
+        var usage = new Usage(project.artifactId(), project.targetRelativePath());
+        DependencyManagementKey key = new DependencyManagementKey(managementKeys, usage);
+        PROJECT_SPECIFIC_DEPENDING_MANAGEMENTS.add(key);
+    }
+
     private static String createSummary() {
         String unmanagedDependencies = UNMANAGED_DEPENDENCIES
                 .entrySet()
@@ -83,6 +93,13 @@ public final class ExtractionSummary {
         if (projectPluginRepositories.isEmpty()) {
             projectPluginRepositories = "none found";
         }
+        String projectsWithOwnDepManagement = PROJECT_SPECIFIC_DEPENDING_MANAGEMENTS
+                .stream()
+                .map(ExtractionSummary::foundDependencyManagement)
+                .collect(Collectors.joining());
+        if (projectsWithOwnDepManagement.isEmpty()) {
+            projectsWithOwnDepManagement = "none found";
+        }
         return """
                 Test extraction summary:
                 
@@ -94,7 +111,18 @@ public final class ExtractionSummary {
                 
                 === Projects that have configured a plugin repository in their POM:
                 %s
-                """.formatted(unmanagedDependencies, projectRepositories, projectPluginRepositories);
+                
+                === Projects that have their own dependency managements
+                %s
+                """.formatted(unmanagedDependencies, projectRepositories, projectPluginRepositories,
+                projectsWithOwnDepManagement);
+    }
+
+    private static String foundDependencyManagement(DependencyManagementKey dependencyManagementKey) {
+        return """
+                - project '%s' located at '%s' manages following dependencies: %s
+                """.formatted(dependencyManagementKey.usage.projectId, dependencyManagementKey.usage.relativePath,
+                dependencyManagementKey.managementKeys);
     }
 
     private static String foundUnmanagedDependency(Map.Entry<UnmanagedDependencyKey, Set<Usage>> e) {
