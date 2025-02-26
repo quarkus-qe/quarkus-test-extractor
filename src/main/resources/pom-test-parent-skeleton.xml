@@ -38,6 +38,11 @@
                 <artifactId>quarkus-integration-test-class-transformer</artifactId>
                 <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-shared-library</artifactId>
+                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
+            </dependency>
             <!-- test extensions used by other extensions but not managed by Quarkus BOM or in the central repo  -->
             <dependency>
                 <groupId>io.quarkus</groupId>

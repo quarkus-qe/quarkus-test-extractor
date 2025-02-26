@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
@@ -22,10 +23,6 @@ import static io.quarkus.test.extractor.project.utils.PluginUtils.TARGET_DIR;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
-    // super special cases that are not really a test modules, but we still need them
-    private static final Set<String> COPY_AS_IS_ARTIFACT_IDS = Set.of("quarkus-integration-test-class-transformer-parent",
-            "quarkus-integration-test-class-transformer-deployment", "quarkus-security-test-utils",
-            "quarkus-integration-test-class-transformer", "quarkus-arc-test-supplement");
     private static final String QUARKUS_BUILD_PARENT = "quarkus-build-parent";
     private static final Path EXTENSION_MODULES_PATH = TARGET_DIR.resolve(EXTENSIONS);
     private static final Path IT_MODULES_PATH = TARGET_DIR.resolve(INTEGRATION_TESTS);
@@ -76,10 +73,6 @@ final class ProjectWriterImpl implements ProjectWriter {
 
     private static Path getModelPath(Project project) {
         return TARGET_DIR.resolve(project.targetRelativePath());
-    }
-
-    private static boolean copyAsIs(Project project) {
-        return COPY_AS_IS_ARTIFACT_IDS.contains(project.artifactId());
     }
 
     private void copyQuarkusBuildParentToOurParentProject(Project project) {

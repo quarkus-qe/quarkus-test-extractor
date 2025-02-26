@@ -1,6 +1,9 @@
 package io.quarkus.test.extractor.project.builder;
 
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
+import io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies;
+import io.quarkus.test.extractor.project.helper.QuarkusTestFramework;
+import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -15,7 +18,10 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import static io.quarkus.test.extractor.project.helper.ExtractionSummary.addNotManagedDependency;
+import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
 import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQuarkusBom;
+import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
+import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
@@ -76,9 +82,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                         // deployment module signals it is Quarkus core extension module
                         // and when it is a test jar, it is not managed (so far I didn't see Quarkus BOM to manage it)
                         // so let's just use Quarkus Platform version because that should fit
+                        // also, test-jars are not productized
                         setQuarkusPlatformVersion(dependency);
                         addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
-                    } else if (!isManagedByQuarkusBom(dependency)) {
+                    } else if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
                     }
                 }
@@ -99,7 +106,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                 // so managed and no version needed
                 if (!isDeploymentArtifact(dependency) && (dependency.getVersion() == null
                         || dependency.getVersion().isEmpty())) {
-                    if (!isManagedByQuarkusBom(dependency)
+                    if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)
                             && notAccompaniedWithDeploymentDep(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
                     }
@@ -245,7 +252,14 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     private void resolveAndSetDependencyVersion(Dependency dependency) {
         String actualDependencyVersion = findDependencyVersion(dependency);
-        if (actualDependencyVersion == null) {
+        if (isTestFrameworkDependency(dependency)) {
+            // some test framework dependencies are not managed by Quarkus BOM
+            setQuarkusCommunityVersion(dependency);
+            addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
+        } else if (isProductizedButNotManaged(dependency)) {
+            setQuarkusPlatformVersion(dependency);
+            addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+        } else if (actualDependencyVersion == null) {
             setQuarkusPlatformVersion(dependency);
             addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
         } else if (actualDependencyVersion.equalsIgnoreCase(version())) {

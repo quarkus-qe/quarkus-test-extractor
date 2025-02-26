@@ -1,6 +1,7 @@
 package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Repository;
@@ -16,10 +17,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestJar;
 
 public final class ExtractionSummary {
 
-    private record UnmanagedDependencyKey(String managementKey, String version) {}
+    private record UnmanagedDependencyKey(String managementKey, String version, boolean isTestJar) {
+    }
     private record RepositoryKey(String name, String id, String url) {}
     private record Usage(String projectId, String relativePath) {
     }
@@ -33,7 +36,7 @@ public final class ExtractionSummary {
 
     public static void addNotManagedDependency(Dependency dependency, Project project, String version) {
         var usage = new Usage(project.artifactId(), project.targetRelativePath());
-        var key = new UnmanagedDependencyKey(getManagementKey(dependency), version);
+        var key = new UnmanagedDependencyKey(getManagementKey(dependency), version, isTestJar(dependency));
         UNMANAGED_DEPENDENCIES.computeIfAbsent(key, k -> new HashSet<>()).add(usage);
     }
 
@@ -77,6 +80,9 @@ public final class ExtractionSummary {
                 .stream()
                 .map(ExtractionSummary::foundProjectRepository)
                 .collect(Collectors.joining());
+        if (projectPluginRepositories.isEmpty()) {
+            projectPluginRepositories = "none found";
+        }
         return """
                 Test extraction summary:
                 
@@ -92,8 +98,9 @@ public final class ExtractionSummary {
     }
 
     private static String foundUnmanagedDependency(Map.Entry<UnmanagedDependencyKey, Set<Usage>> e) {
-        String managementKey = e.getKey().managementKey;
-        String version = e.getKey().version == null ? "<<no version>>" : e.getKey().version;
+        var key = e.getKey();
+        String managementKey = key.managementKey;
+        String version = key.version == null ? "<<no version>>" : key.version;
         StringBuilder usages = new StringBuilder();
         for (Usage usage : e.getValue()) {
             usages
@@ -104,10 +111,11 @@ public final class ExtractionSummary {
                     .append("'")
                     .append(System.lineSeparator());
         }
+        String dependency = managementKey + (key.isTestJar ? " (test-jar type)" : "");
         return """
                 - Dependency '%s' is not managed by Quarkus BOM, going to use '%s' version, this dependency is used at:
                 %s
-                """.formatted(managementKey, version, usages.toString());
+                """.formatted(dependency, version, usages.toString());
     }
 
     private static String foundProjectRepository(Map.Entry<RepositoryKey, Set<Usage>> e) {
