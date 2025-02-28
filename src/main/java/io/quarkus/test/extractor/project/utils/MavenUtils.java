@@ -20,6 +20,7 @@ import java.util.Set;
 
 public final class MavenUtils {
 
+    public static final String POM = "pom";
     public static final String POM_XML = "pom.xml";
     public static final String TEST_SCOPE = "test";
     public static final String COMPILE_SCOPE = "compile";
@@ -33,6 +34,7 @@ public final class MavenUtils {
     private static final String TEST_JAR = "test-jar";
     private static final String JAR = "jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
+    private static final String THIS_PROJECT_VERSION = "${project.version}";
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise
@@ -159,4 +161,7 @@ public final class MavenUtils {
         return project.packagingType() == null || JAR.equalsIgnoreCase(project.packagingType());
     }
 
+    public static boolean hasThisProjectVersion(Dependency dependency) {
+        return THIS_PROJECT_VERSION.equalsIgnoreCase(dependency.getVersion());
+    }
 }

@@ -3,6 +3,7 @@ package io.quarkus.test.extractor.project.builder;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.BuildBase;
@@ -29,9 +30,11 @@ import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQua
 import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
 import static io.quarkus.test.extractor.project.result.ParentProject.getPluginVersionInParentProps;
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.POM;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.hasThisProjectVersion;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotCentralRepository;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotSurefireOrFailsafePlugin;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestJar;
@@ -175,9 +178,34 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                         resolveAndSetDependencyVersion(dependency);
                     }
                 }
+                if (hasThisProjectVersion(dependency)) {
+                    if (isManagedByQuarkusBom(dependency)) {
+                        dependency.setVersion(null);
+                    } else {
+                        setQuarkusPlatformVersion(dependency);
+                    }
+                }
                 result.add(dependency);
             });
         } else {
+            mavenProject.getOriginalModel().getDependencies().removeIf(dep -> {
+                // deployment dependencies in IT modules like this:
+                // <version>${project.version}</version>
+                // <type>pom</type>
+                // <scope>test</scope>
+                // <exclusions>
+                //  <exclusion>
+                //  <groupId>*</groupId>
+                //  <artifactId>*</artifactId>
+                //  </exclusion>
+                // </exclusions>
+                // they exist to enforce build order, they are not managed (with POM type) and may not be resolved
+                // users won't have them in their Quarkus applications, therefore we need to remove them
+                return isDeploymentArtifact(dep) && TEST_SCOPE.equalsIgnoreCase(dep.getScope())
+                        && ("${project.version}".equalsIgnoreCase(dep.getVersion())
+                        || version().equalsIgnoreCase(dep.getVersion()))
+                        && POM.equalsIgnoreCase(dep.getType());
+            });
             mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
                 var dependency = dep.clone();
                 if (COMPILE_SCOPE.equalsIgnoreCase(dependency.getScope())) {
@@ -195,6 +223,13 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                     if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)
                             && notAccompaniedWithDeploymentDep(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
+                    }
+                }
+                if (hasThisProjectVersion(dependency)) {
+                    if (isManagedByQuarkusBom(dependency)) {
+                        dependency.setVersion(null);
+                    } else {
+                        setQuarkusPlatformVersion(dependency);
                     }
                 }
                 result.add(dependency);
