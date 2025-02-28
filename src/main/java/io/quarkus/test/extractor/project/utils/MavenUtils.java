@@ -25,8 +25,9 @@ public final class MavenUtils {
     public static final String COMPILE_SCOPE = "compile";
     public static final String QUARKUS_PLATFORM_VERSION = "${quarkus.platform.version}";
     public static final String QUARKUS_COMMUNITY_VERSION = "${quarkus.community.version}";
+    public static final String USE_EXTRACTED_PROPERTIES = "USE-EXTRACTED-PROPERTIES";
     // used to avoid automatic substitution when we don't want it
-    private static final String MAVEN_PROPERTY_PREFIX = "\\$USE-EXTRACTED-PROPERTIES\\{";
+    private static final String MAVEN_PROPERTY_PREFIX = "\\$" + USE_EXTRACTED_PROPERTIES + "\\{";
     private static final String PROPERTY_START = "\\${";
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
@@ -146,5 +147,10 @@ public final class MavenUtils {
 
     public static boolean isNotCentralRepository(Repository repository) {
         return !CENTRAL_REPOSITORY_ID.equalsIgnoreCase(repository.getId());
+    }
+
+    public static boolean isNotSurefireOrFailsafePlugin(String artifactId) {
+        return !"maven-failsafe-plugin".equalsIgnoreCase(artifactId)
+                && !"maven-surefire-plugin".equalsIgnoreCase(artifactId);
     }
 }

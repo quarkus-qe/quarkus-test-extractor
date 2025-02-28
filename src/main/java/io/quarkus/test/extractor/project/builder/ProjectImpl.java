@@ -2,12 +2,15 @@ package io.quarkus.test.extractor.project.builder;
 
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
+import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Build;
+import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
@@ -16,19 +19,21 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static io.quarkus.test.extractor.project.helper.ExtractionSummary.addNotManagedDependency;
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
 import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQuarkusBom;
 import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
+import static io.quarkus.test.extractor.project.result.ParentProject.getPluginVersionInParentProps;
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotCentralRepository;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotSurefireOrFailsafePlugin;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestJar;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.setQuarkusCommunityVersion;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.setQuarkusPlatformVersion;
@@ -39,30 +44,58 @@ import static io.quarkus.test.extractor.project.utils.MavenUtils.COMPILE_SCOPE;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.TEST_SCOPE;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestModuleProperty;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isDeploymentArtifact;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.prefixWithTests;
 
-record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExtensionDeploymentModule)
-        implements Project {
+record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExtensionDeploymentModule,
+                   ExtractionSummary extractionSummary) implements Project {
 
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
     // ignoring 'maven-compiler-plugin' could be an issue as sometimes there is a special configuration / execution
     // let's reevaluate it case by case when we experience issue so that we understand the differences
     private static final Set<String> IGNORED_PLUGINS = Set.of("maven-compiler-plugin", "forbiddenapis",
-            "maven-jar-plugin", "templating-maven-plugin", "quarkus-maven-plugin", "maven-enforcer-plugin",
-            "impsort-maven-plugin");
+            "templating-maven-plugin", "quarkus-maven-plugin", "maven-enforcer-plugin", "impsort-maven-plugin");
 
-    private ProjectImpl(MavenProject mavenProject, String relativePath) {
-        this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath));
+    private ProjectImpl(MavenProject mavenProject, String relativePath, ExtractionSummary summary) {
+        this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath), summary);
     }
 
-    ProjectImpl(MavenProject mavenProject) {
-        this(mavenProject, extractRelativePath(mavenProject));
+    ProjectImpl(MavenProject mavenProject, ExtractionSummary extractionSummary) {
+        this(mavenProject, extractRelativePath(mavenProject), extractionSummary);
     }
 
     @Override
     public List<Profile> profiles() {
         List<Profile> profiles = new ArrayList<>();
-        mavenProject.getOriginalModel().getProfiles().forEach(profile -> profiles.add(profile.clone()));
+        mavenProject.getOriginalModel().getProfiles().forEach(p -> {
+            var profile = p.clone();
+            if (profile.getBuild() != null) {
+                // TODO: this can be an issue because active profiles in 'mavenProject'
+                //   differs from profiles active during a test execution, so basically,
+                //   plugins and dependencies declared in inactive profiles are not resolved
+                //   one day when we hit issues we need to rewrite this
+                prepareBuild(profile.getBuild(), profile.getBuild().getPlugins(),
+                        profile.getBuild().getPluginManagement(), this);
+            }
+            profile.setDependencyManagement(prepareDependencyManagement(profile.getDependencyManagement(), this));
+            var dependencies = profile.getDependencies();
+            if (dependencies != null && !dependencies.isEmpty()) {
+                var preparedDependencies = new ArrayList<Dependency>();
+                dependencies.forEach(d -> {
+                    var dependency = d.clone();
+                    if (!isDeploymentArtifact(dependency) && (dependency.getVersion() == null
+                            || dependency.getVersion().isEmpty())) {
+                        if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)
+                                && notAccompaniedWithDeploymentDep(dependency)) {
+                            resolveAndSetDependencyVersion(dependency);
+                        }
+                    }
+                    preparedDependencies.add(dependency);
+                });
+                profile.setDependencies(preparedDependencies);
+            }
+            profiles.add(profile);
+        });
         return List.copyOf(profiles);
     }
 
@@ -71,10 +104,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         if (mavenProject.getOriginalModel().getBuild() == null) {
             return null;
         }
+        List<Plugin> buildPlugins = mavenProject.getBuildPlugins();
+        PluginManagement pluginManagement = mavenProject.getPluginManagement();
         Build build = mavenProject.getOriginalModel().getBuild().clone();
-        if (build.getPlugins() != null) {
-            build.getPlugins().removeIf(plugin -> IGNORED_PLUGINS.contains(plugin.getArtifactId()));
-        }
+        prepareBuild(build, buildPlugins, pluginManagement, this);
         return build;
     }
 
@@ -85,6 +118,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             return mavenProject.getDependencyManagement();
         }
         DependencyManagement dependencyManagement = mavenProject.getOriginalModel().getDependencyManagement();
+        return prepareDependencyManagement(dependencyManagement, this);
+    }
+
+    private DependencyManagement prepareDependencyManagement(DependencyManagement dependencyManagement,
+                                                                    Project project) {
         if (dependencyManagement == null || dependencyManagement.getDependencies() == null
                 || dependencyManagement.getDependencies().isEmpty()) {
             return null;
@@ -93,8 +131,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                 .filter(QuarkusBuildParent::isNotManagedByBuildParent).toList();
         if (!managedDependencies.isEmpty()) {
             // really?? that is suspicious, let's add it to summary so that someone can inspect this fact manually
-            ExtractionSummary.addProjectWithDependencyManagement(dependencyManagement, this);
-            return dependencyManagement;
+            extractionSummary.addProjectWithDependencyManagement(dependencyManagement, project);
+            return dependencyManagement.clone();
         }
         return null;
     }
@@ -132,7 +170,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                         // so let's just use Quarkus Platform version because that should fit
                         // also, test-jars are not productized
                         setQuarkusPlatformVersion(dependency);
-                        addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+                        extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
                     } else if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
                     }
@@ -174,7 +212,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         mavenProject.getRepositories().forEach(repo -> {
             if (isNotCentralRepository(repo)) {
                 var repository = repo.clone();
-                ExtractionSummary.addRepository(repository, this);
+                extractionSummary.addRepository(repository, this);
                 result.add(repository);
             }
         });
@@ -190,7 +228,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         mavenProject.getPluginRepositories().forEach(repo -> {
             if (isNotCentralRepository(repo)) {
                 var repository = repo.clone();
-                ExtractionSummary.addPluginRepository(repository, this);
+                extractionSummary.addPluginRepository(repository, this);
                 result.add(repository);
             }
         });
@@ -295,7 +333,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     @Override
     public Model originalModel() {
-        return mavenProject.getOriginalModel().clone();
+        var model = mavenProject.getOriginalModel().clone();
+        model.setBuild(build());
+        model.setDependencies(dependencies());
+        return model;
     }
 
     private void resolveAndSetDependencyVersion(Dependency dependency) {
@@ -303,19 +344,19 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         if (isTestFrameworkDependency(dependency)) {
             // some test framework dependencies are not managed by Quarkus BOM
             setQuarkusCommunityVersion(dependency);
-            addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
         } else if (isProductizedButNotManaged(dependency)) {
             setQuarkusPlatformVersion(dependency);
-            addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
         } else if (actualDependencyVersion == null) {
             setQuarkusPlatformVersion(dependency);
-            addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
         } else if (actualDependencyVersion.equalsIgnoreCase(version())) {
             setQuarkusCommunityVersion(dependency);
-            addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
         } else {
             dependency.setVersion(actualDependencyVersion);
-            addNotManagedDependency(dependency, this);
+            extractionSummary.addNotManagedDependency(dependency, this);
         }
     }
 
@@ -335,4 +376,65 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         return CURRENT_DIR.relativize(mavenProjectPath).toString();
     }
 
+    private void prepareBuild(BuildBase build, List<Plugin> buildPlugins, PluginManagement pluginManagement,
+                                     Project project) {
+        if (build.getPlugins() != null) {
+            build.getPlugins().removeIf(plugin -> IGNORED_PLUGINS.contains(plugin.getArtifactId()));
+            if (!build.getPlugins().isEmpty()) {
+                build.getPlugins().forEach(plugin -> {
+                    // we manage failsafe and surefire plugins because it's given we need them
+                    // as for others, they are not managed so that we still know they are needed,
+                    // and we record that need in the extraction summary; we need to understand
+                    // what plugins are used as inspecting a thousand of modules is impossible
+                    if (plugin.getVersion() == null && isNotSurefireOrFailsafePlugin(plugin.getArtifactId())) {
+                        String pluginVersion = null;
+                        if (!isQuarkusParentPomProject(project)) {
+                            pluginVersion = QuarkusParentPom.getPluginVersion(plugin);
+                        }
+                        if (pluginVersion == null) {
+                            pluginVersion = getPluginVersionInParentProps(plugin);
+                        }
+                        if (pluginVersion == null) {
+                            // some versions are just in other BOM, it can be really complicated hierarchy
+                            // let's just use resolved version
+                            pluginVersion = findResolvedPluginVersion(plugin, buildPlugins, pluginManagement);
+                        }
+                        plugin.setVersion(pluginVersion);
+                    }
+                    extractionSummary.addBuildPlugin(plugin, project);
+                });
+            }
+        }
+    }
+
+    private static String findResolvedPluginVersion(Plugin plugin, List<Plugin> buildPlugins,
+                                                    PluginManagement pluginManagement) {
+        String pluginVersion = null;
+        if (buildPlugins != null && !buildPlugins.isEmpty()) {
+            pluginVersion = buildPlugins.stream()
+                    .filter(p -> plugin.getArtifactId().equalsIgnoreCase(p.getArtifactId()))
+                    .map(Plugin::getVersion)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (pluginVersion != null) {
+            return pluginVersion;
+        } else if (pluginManagement != null
+                && pluginManagement.getPlugins() != null) {
+            pluginVersion = pluginManagement.getPlugins().stream()
+                    .filter(p -> plugin.getArtifactId().equalsIgnoreCase(p.getArtifactId()))
+                    .map(Plugin::getVersion)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (pluginVersion != null) {
+            return pluginVersion;
+        }
+        // this is the last resort method, so now someone has to manually lookup where is it managed and change impl.
+        // it is possible that some plugins only present in profiles will not appear in the build plugins, and we just
+        // need to walk through profile plugins
+        throw new IllegalStateException("Failed to determine plugin '%s' version".formatted(plugin.getArtifactId()));
+    }
 }

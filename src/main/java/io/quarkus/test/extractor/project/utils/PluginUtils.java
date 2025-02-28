@@ -1,5 +1,6 @@
 package io.quarkus.test.extractor.project.utils;
 
+import io.quarkus.test.extractor.project.builder.Project;
 import org.apache.maven.model.Dependency;
 
 import java.io.File;
@@ -30,6 +31,8 @@ public final class PluginUtils {
      * This way, we avoid conflicts with actual extensions.
      */
     private static final String TESTS_PREFIX = "tests-";
+    private static final String QUARKUS_BUILD_PARENT = "quarkus-build-parent";
+    private static final String QUARKUS_DOCUMENTATION = "quarkus-documentation";
 
     private PluginUtils() {
     }
@@ -65,5 +68,18 @@ public final class PluginUtils {
 
     public static String prefixWithTests(String artifactId) {
         return TESTS_PREFIX + artifactId;
+    }
+
+    public static boolean isQuarkusBuildParent(Project project) {
+        return QUARKUS_BUILD_PARENT.equals(project.artifactId());
+    }
+
+    public static boolean isQuarkusParentPomProject(Project project) {
+        return "quarkus-parent".equalsIgnoreCase(project.artifactId());
+    }
+
+    public static boolean isLastModule(String projectArtifactId) {
+        // TODO: this is ugly and hacky, docs module is the last now, but if this changes this will result in tests loss
+        return QUARKUS_DOCUMENTATION.equals(projectArtifactId);
     }
 }

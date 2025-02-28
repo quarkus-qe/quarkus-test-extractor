@@ -68,7 +68,7 @@ public final class QuarkusBom {
             managementKeys = Files.readString(getManagementKeysPath())
                     .lines()
                     .map(String::trim)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toUnmodifiableSet());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

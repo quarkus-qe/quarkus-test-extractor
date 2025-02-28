@@ -19,6 +19,7 @@
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>
+        <quarkus-maven-plugin.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</quarkus-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -30,32 +31,17 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- integration test module used by other integration tests  -->
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-integration-test-class-transformer-deployment</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-integration-test-class-transformer</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-integration-test-shared-library</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
-            </dependency>
-            <!-- test extensions used by other extensions but not managed by Quarkus BOM or in the central repo  -->
+            <!-- test extensions used by other extensions but not managed by Quarkus BOM -->
+            <!-- but so far, they had been in Maven central repository -->
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc-test-supplement</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
+                <version>$USE-EXTRACTED-PROPERTIES{quarkus.community.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-security-test-utils</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{project.version}</version>
+                <version>$USE-EXTRACTED-PROPERTIES{quarkus.community.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -167,5 +153,17 @@
                 </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>$USE-EXTRACTED-PROPERTIES{version.surefire.plugin}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>$USE-EXTRACTED-PROPERTIES{version.failsafe.plugin}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

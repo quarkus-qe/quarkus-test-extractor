@@ -3,9 +3,9 @@ package io.quarkus.test.extractor.project.writer;
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
+import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
-import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 
@@ -13,31 +13,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.writeMavenModel;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.TARGET_DIR;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.isLastModule;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusBuildParent;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
-    private static final String QUARKUS_BUILD_PARENT = "quarkus-build-parent";
     private static final Path EXTENSION_MODULES_PATH = TARGET_DIR.resolve(EXTENSIONS);
     private static final Path IT_MODULES_PATH = TARGET_DIR.resolve(INTEGRATION_TESTS);
-    private static final ProjectWriter INSTANCE = new ProjectWriterImpl();
-    private final AtomicBoolean isFirstModule;
-    private volatile boolean quarkusBuildParentDetected;
 
-    private ProjectWriterImpl() {
-        this.isFirstModule = new AtomicBoolean(true);
-        this.quarkusBuildParentDetected = false;
-    }
+    private final ExtractionSummary extractionSummary;
 
-    static ProjectWriter getInstance() {
-        return INSTANCE;
+    ProjectWriterImpl(ExtractionSummary extractionSummary) {
+        this.extractionSummary = extractionSummary;
     }
 
     @Override
@@ -48,19 +43,23 @@ final class ProjectWriterImpl implements ProjectWriter {
 
         if (isQuarkusBuildParent(project)) {
             copyQuarkusBuildParentToOurParentProject(project);
+        } else if (isQuarkusParentPomProject(project)) {
+            QuarkusParentPom.collectPluginVersions(project);
         } else if (copyAsIs(project)) {
-            copyWithoutChanges(project);
+            copyWholeProject(project);
         } else if (project.containsTests()) {
             createTestModuleFrom(project);
         }
 
-        if (isLastModule(project)) {
+        if (isLastModule(project.artifactId())) {
             ParentProject.writeTo(TARGET_DIR);
-            ExtractionSummary.createAndStoreSummary();
+            extractionSummary.createAndStoreFinalSummary();
+        } else {
+            extractionSummary.createAndStorePartialSummary();
         }
     }
 
-    private static void copyWithoutChanges(Project project) {
+    private static void copyWholeProject(Project project) {
         Model model = project.originalModel();
         if (project.isDirectSubModule()) {
             Parent parent = model.getParent();
@@ -70,24 +69,22 @@ final class ProjectWriterImpl implements ProjectWriter {
             parent.setRelativePath(computeRelativePath(project));
         }
         createMavenModule(project, model, getModelPath(project));
+        // we copy the whole project, so we need to manage it so that it is found
+        // if some test module needs it
+        ParentProject.addManagedProject(project);
     }
 
     private static Path getModelPath(Project project) {
         return TARGET_DIR.resolve(project.targetRelativePath());
     }
 
-    private void copyQuarkusBuildParentToOurParentProject(Project project) {
-        quarkusBuildParentDetected = true;
+    private static void copyQuarkusBuildParentToOurParentProject(Project project) {
         ParentProject.addProperties(project.properties());
         ParentProject.setQuarkusVersion(project.version());
         QuarkusBuildParent.rememberDependencyManagement(project.dependencyManagement());
     }
 
-    private boolean isQuarkusBuildParent(Project project) {
-        return !quarkusBuildParentDetected && QUARKUS_BUILD_PARENT.equals(project.artifactId());
-    }
-
-    private void createTestModuleFrom(Project project) {
+    private static void createTestModuleFrom(Project project) {
         Model testModel = TestModuleProject.create(project);
         Path testModelPath = getModelPath(project);
         createMavenModule(project, testModel, testModelPath);
@@ -96,17 +93,18 @@ final class ProjectWriterImpl implements ProjectWriter {
     private static void createMavenModule(Project project, Model testModel, Path testModelPath) {
         createModuleDirectory(project);
         addToParentPomModel(project);
-        MavenUtils.writeMavenModel(testModel, testModelPath);
-    }
-
-    private boolean isFirstModule() {
-        return isFirstModule.compareAndSet(true, false);
+        writeMavenModel(testModel, testModelPath);
     }
 
     private static void addToParentPomModel(Project project) {
         if (project.isDirectSubModule()) {
             ParentProject.addTestModule(project.targetRelativePath(), project.targetProfileName());
         }
+    }
+
+    private static boolean isFirstModule() {
+        return !Files.exists(TARGET_DIR) || !Files.exists(EXTENSION_MODULES_PATH)
+                || !Files.exists(IT_MODULES_PATH);
     }
 
     private static void createDirectoryStructure() {
@@ -118,11 +116,6 @@ final class ProjectWriterImpl implements ProjectWriter {
         } catch (IOException e) {
             throw new RuntimeException("Failed to create target directory structure", e);
         }
-    }
-
-    private static boolean isLastModule(Project project) {
-        // TODO: this is ugly and hacky, docs module is the last now, but if this changes this will result in tests loss
-        return "quarkus-documentation".equals(project.artifactId());
     }
 
     private static void createModuleDirectory(Project project) {

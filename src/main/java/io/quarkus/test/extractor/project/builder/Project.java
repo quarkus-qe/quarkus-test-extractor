@@ -1,5 +1,6 @@
 package io.quarkus.test.extractor.project.builder;
 
+import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
@@ -13,8 +14,8 @@ import java.util.Properties;
 
 public sealed interface Project permits ProjectImpl {
 
-    static Project extract(MavenProject project) {
-        return new ProjectImpl(project);
+    static Project extract(MavenProject project, ExtractionSummary extractionSummary) {
+        return new ProjectImpl(project, extractionSummary);
     }
 
     List<Profile> profiles();
@@ -57,14 +58,5 @@ public sealed interface Project permits ProjectImpl {
      * @return Original model in case this project needs to be copies 'as is'.
      */
     Model originalModel();
-    // TODO list here:
-    //   - modules
-    //   - plugin management??
-    //   - plugin repositories
-    //   - repositories!!
-    //   - dependency management ??
-    //   - profiles??
-    //   - build!!!??!!
-    //   - resources
-    //   - dependencies
+
 }
