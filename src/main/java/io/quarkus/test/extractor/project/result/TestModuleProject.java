@@ -27,10 +27,6 @@ public final class TestModuleProject {
         }
         model.setBuild(project.build());
         model.setProfiles(project.profiles());
-
-        // FIXME: handle different packaging!!!
-        // FIXME: handle modules!!!
-
         return model;
     }
 }

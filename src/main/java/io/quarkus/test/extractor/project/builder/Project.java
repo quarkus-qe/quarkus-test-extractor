@@ -59,4 +59,7 @@ public sealed interface Project permits ProjectImpl {
      */
     Model originalModel();
 
+    String packagingType();
+
+    boolean isIntegrationTestModule();
 }

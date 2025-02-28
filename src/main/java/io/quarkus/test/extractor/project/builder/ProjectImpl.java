@@ -296,10 +296,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     public boolean containsTests() {
         // ATM tests which are testing Quarkus application (not individual classes)
         // are present in extension deployment modules and integration test modules
+        // FIXME: don't say contains tests if there are no tests!!!!
         if (isExtensionDeploymentModule) {
             return true;
         }
-        return relativePath.startsWith(INTEGRATION_TESTS + File.separator);
+        return isIntegrationTestModule();
     }
 
     @Override
@@ -337,6 +338,16 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         model.setBuild(build());
         model.setDependencies(dependencies());
         return model;
+    }
+
+    @Override
+    public String packagingType() {
+        return mavenProject.getPackaging();
+    }
+
+    @Override
+    public boolean isIntegrationTestModule() {
+        return relativePath.startsWith(INTEGRATION_TESTS + File.separator);
     }
 
     private void resolveAndSetDependencyVersion(Dependency dependency) {

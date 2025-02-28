@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import static io.quarkus.test.extractor.project.utils.MavenUtils.hasJarPackaging;
+
 public final class ParentProject {
 
     // super special cases that are not really a test modules, but we still need them
@@ -55,7 +57,8 @@ public final class ParentProject {
     }
 
     public static boolean copyAsIs(Project project) {
-        return COPY_AS_IS_ARTIFACT_IDS.contains(project.artifactId());
+        return COPY_AS_IS_ARTIFACT_IDS.contains(project.artifactId())
+                || (project.isIntegrationTestModule() && !hasJarPackaging(project));
     }
 
     public static void writeTo(Path targetDir) {

@@ -31,6 +31,7 @@ public final class MavenUtils {
     private static final String PROPERTY_START = "\\${";
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
+    private static final String JAR = "jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
 
     static {
@@ -153,4 +154,9 @@ public final class MavenUtils {
         return !"maven-failsafe-plugin".equalsIgnoreCase(artifactId)
                 && !"maven-surefire-plugin".equalsIgnoreCase(artifactId);
     }
+
+    public static boolean hasJarPackaging(Project project) {
+        return project.packagingType() == null || JAR.equalsIgnoreCase(project.packagingType());
+    }
+
 }

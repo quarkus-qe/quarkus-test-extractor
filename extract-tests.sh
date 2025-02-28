@@ -19,3 +19,7 @@
 git clone git@github.com:quarkus-qe/quarkus-test-extractor.git
 cd quarkus-test-extractor
 mvn clean install
+
+# FIXME: this is just example, but needs to be elsewhere and conditional
+mvn -f bom/application/ io.quarkus.qe:quarkus-test-extractor:1.0-SNAPSHOT:parse-quarkus-bom -Dwrite-to=/tmp/a
+mvn io.quarkus.qe:quarkus-test-extractor:1.0-SNAPSHOT:extract-tests -Dwrite-to=/tmp/a
