@@ -58,9 +58,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     private static final String JAVA_FILE_EXTENSION = ".java";
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
-    // ignoring 'maven-compiler-plugin' could be an issue as sometimes there is a special configuration / execution
-    // let's reevaluate it case by case when we experience issue so that we understand the differences
-    private static final Set<String> IGNORED_PLUGINS = Set.of("maven-compiler-plugin", "forbiddenapis",
+    private static final Set<String> IGNORED_PLUGINS = Set.of("forbiddenapis",
             "templating-maven-plugin", "quarkus-maven-plugin", "maven-enforcer-plugin", "impsort-maven-plugin");
 
     private ProjectImpl(MavenProject mavenProject, String relativePath, ExtractionSummary summary) {
@@ -464,7 +462,29 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     private void prepareBuild(BuildBase build, List<Plugin> buildPlugins, PluginManagement pluginManagement,
                                      Project project) {
         if (build.getPlugins() != null) {
-            build.getPlugins().removeIf(plugin -> IGNORED_PLUGINS.contains(plugin.getArtifactId()));
+            build.getPlugins().removeIf(plugin -> {
+                if (IGNORED_PLUGINS.contains(plugin.getArtifactId())) {
+                    return true;
+                }
+                if ("maven-compiler-plugin".equalsIgnoreCase(plugin.getArtifactId())) {
+                    // if it is only plugin with no configuration, we don't need it
+                    // if only 'quarkus-extension-processor' annotation processor is present
+                    // we don't want it, otherwise, we need to copy modified plugin
+                    boolean noDeps = plugin.getDependencies() == null || plugin.getDependencies().isEmpty();
+                    boolean noConfig = plugin.getConfiguration() == null;
+                    boolean noExecutions = plugin.getExecutions() == null || plugin.getExecutions().isEmpty();
+                    if (noDeps && noConfig && noExecutions) {
+                        return true;
+                    } else if (plugin.getExecutions().size() == 1) {
+                        var pluginExecution = plugin.getExecutions().get(0);
+                        return "default-compile".equalsIgnoreCase(pluginExecution.getId());
+                    } else {
+                        // TODO: drop 'quarkus-extension-processor' if present
+                        return false;
+                    }
+                }
+                return false;
+            });
             if (!build.getPlugins().isEmpty()) {
                 build.getPlugins().forEach(plugin -> {
                     // we manage failsafe and surefire plugins because it's given we need them

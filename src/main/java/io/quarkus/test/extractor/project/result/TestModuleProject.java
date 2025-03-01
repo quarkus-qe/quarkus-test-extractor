@@ -13,8 +13,12 @@ public final class TestModuleProject {
     public static Model create(Project project) {
         Model model = MAVEN_MODEL.clone();
         model.setVersion(project.version());
-        model.getParent().setVersion(project.version());
-        model.getParent().setRelativePath(computeRelativePath(project));
+        if (project.isDirectSubModule()) {
+            model.getParent().setVersion(project.version());
+            model.getParent().setRelativePath(computeRelativePath(project));
+        } else {
+            model.setParent(project.originalModel().getParent());
+        }
         model.setArtifactId(project.artifactId());
         model.setName(project.name());
         model.setProperties(project.properties());
