@@ -18,6 +18,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public final class MavenUtils {
 
     public static final String POM = "pom";
@@ -168,5 +170,45 @@ public final class MavenUtils {
 
     public static boolean isPomPackageType(Dependency dep) {
         return POM.equalsIgnoreCase(dep.getType());
+    }
+
+    public static void copyDirectory(File sourceDirectory, File destinationDirectory) {
+        destinationDirectory.mkdirs();
+        copyDirectory(sourceDirectory, destinationDirectory, destinationDirectory);
+    }
+
+    private static void copyDirectory(File sourceDir, File destinationDir, File originalDir) {
+        File[] files = sourceDir.listFiles();
+        if (files != null) {
+            String sourcePath = sourceDir.getAbsolutePath();
+            for(File source : files) {
+                if (!source.equals(originalDir)) {
+                    String dest = source.getAbsolutePath();
+                    dest = dest.substring(sourcePath.length() + 1);
+                    File destination = new File(destinationDir, dest);
+                    destination.mkdirs();
+                    if (source.isFile()) {
+                        destination = destination.getParentFile();
+                        File destinationFile = new File(destination, source.getName());
+                        if (!destinationFile.exists()) {
+                            try {
+                                destinationFile.createNewFile();
+                            } catch (IOException e) {
+                                throw new RuntimeException("Failed to create file " + destinationFile, e);
+                            }
+                        }
+                        try {
+                            Files.copy(source.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to copy '%s' file to '%s'"
+                                    .formatted(source.getPath(), destinationFile.getPath()), e);
+                        }
+                    } else {
+                        copyDirectory(source, destination, originalDir);
+                    }
+                }
+            }
+
+        }
     }
 }

@@ -6,15 +6,19 @@ import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
+import org.codehaus.plexus.util.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.POM_XML;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.writeMavenModel;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
@@ -68,14 +72,10 @@ final class ProjectWriterImpl implements ProjectWriter {
             parent.setVersion(project.version());
             parent.setRelativePath(computeRelativePath(project));
         }
-        createMavenModule(project, model, getModelPath(project));
+        createMavenModule(project, model, getTargetProjectDirPath(project));
         // we copy the whole project, so we need to manage it so that it is found
         // if some test module needs it
         ParentProject.addManagedProject(project);
-    }
-
-    private static Path getModelPath(Project project) {
-        return TARGET_DIR.resolve(project.targetRelativePath());
     }
 
     private static void copyQuarkusBuildParentToOurParentProject(Project project) {
@@ -85,9 +85,41 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void createTestModuleFrom(Project project) {
+        if (project.isIntegrationTestModule()) {
+            copyAllFilesInProjectExceptForPom(project);
+        } else {
+            copyTests(project);
+        }
         Model testModel = TestModuleProject.create(project);
-        Path testModelPath = getModelPath(project);
-        createMavenModule(project, testModel, testModelPath);
+        Path testModelTargetPath = getTargetProjectDirPath(project);
+        createMavenModule(project, testModel, testModelTargetPath);
+    }
+
+    private static void copyAllFilesInProjectExceptForPom(Project project) {
+        File sourceProjectDir = project.projectPath().toFile();
+        File targetProjectDir = getTargetProjectDirPath(project).toFile();
+        MavenUtils.copyDirectory(sourceProjectDir, targetProjectDir);
+        try {
+            Files.deleteIfExists(getTargetProjectDirPath(project).resolve(POM_XML));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete '%s' project POM file"
+                    .formatted(targetProjectDir.getPath()), e);
+        }
+    }
+
+    private static void copyTests(Project project) {
+        Path sourceProjectSrcTestPath = project.projectPath().resolve("src").resolve("test");
+        File sourceProjectSrcTestDir = sourceProjectSrcTestPath.toFile();
+        Path targetProjectSrcTestPath = getTargetProjectDirPath(project).resolve("src").resolve("test");
+        File targetProjectSrcTestDir = targetProjectSrcTestPath.toFile();
+        targetProjectSrcTestDir.mkdirs();
+        try {
+            FileUtils.copyDirectory(sourceProjectSrcTestDir, targetProjectSrcTestDir);
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Failed to copy extension tests from '%s' to '%s'".formatted(
+                            sourceProjectSrcTestPath, targetProjectSrcTestPath), e);
+        }
     }
 
     private static void createMavenModule(Project project, Model testModel, Path testModelPath) {
@@ -120,9 +152,13 @@ final class ProjectWriterImpl implements ProjectWriter {
 
     private static void createModuleDirectory(Project project) {
         try {
-            Files.createDirectories(TARGET_DIR.resolve(project.targetRelativePath()));
+            Files.createDirectories(getTargetProjectDirPath(project));
         } catch (IOException e) {
             throw new RuntimeException("Failed to create test module directory", e);
         }
+    }
+
+    private static Path getTargetProjectDirPath(Project project) {
+        return TARGET_DIR.resolve(project.targetRelativePath());
     }
 }

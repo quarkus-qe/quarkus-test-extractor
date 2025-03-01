@@ -3,7 +3,6 @@ package io.quarkus.test.extractor.project.builder;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
-import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.BuildBase;
@@ -17,6 +16,8 @@ import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,6 @@ import static io.quarkus.test.extractor.project.result.ParentProject.getPluginVe
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.ANY;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.JAR;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.POM;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
@@ -56,6 +56,7 @@ import static io.quarkus.test.extractor.project.utils.PluginUtils.prefixWithTest
 record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExtensionDeploymentModule,
                    ExtractionSummary extractionSummary) implements Project {
 
+    private static final String JAVA_FILE_EXTENSION = ".java";
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
     // ignoring 'maven-compiler-plugin' could be an issue as sometimes there is a special configuration / execution
     // let's reevaluate it case by case when we experience issue so that we understand the differences
@@ -356,9 +357,17 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     public boolean containsTests() {
         // ATM tests which are testing Quarkus application (not individual classes)
         // are present in extension deployment modules and integration test modules
-        // FIXME: don't say contains tests if there are no tests!!!!
         if (isExtensionDeploymentModule) {
-            return true;
+            Path sourceProjectSrcTestJavaPath = projectPath().resolve("src").resolve("test").resolve("java");
+            if (Files.exists(sourceProjectSrcTestJavaPath)) {
+                try(var pathStream = Files.walk(sourceProjectSrcTestJavaPath)) {
+                    return pathStream.anyMatch(p -> p.endsWith(JAVA_FILE_EXTENSION));
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to detect whether '%s' extension module contains test "
+                            .formatted(sourceProjectSrcTestJavaPath), e);
+                }
+            }
+            return false;
         }
         return isIntegrationTestModule();
     }
@@ -408,6 +417,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     @Override
     public boolean isIntegrationTestModule() {
         return relativePath.startsWith(INTEGRATION_TESTS + File.separator);
+    }
+
+    @Override
+    public Path projectPath() {
+        return CURRENT_DIR.resolve(relativePath);
     }
 
     private void resolveAndSetDependencyVersion(Dependency dependency) {

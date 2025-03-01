@@ -9,6 +9,7 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.Repository;
 import org.apache.maven.project.MavenProject;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 
@@ -62,4 +63,6 @@ public sealed interface Project permits ProjectImpl {
     String packagingType();
 
     boolean isIntegrationTestModule();
+
+    Path projectPath();
 }
