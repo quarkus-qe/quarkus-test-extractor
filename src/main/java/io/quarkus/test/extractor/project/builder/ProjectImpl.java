@@ -30,6 +30,8 @@ import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQua
 import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
 import static io.quarkus.test.extractor.project.result.ParentProject.getPluginVersionInParentProps;
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.ANY;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.JAR;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.POM;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
@@ -37,6 +39,7 @@ import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKe
 import static io.quarkus.test.extractor.project.utils.MavenUtils.hasThisProjectVersion;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotCentralRepository;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotSurefireOrFailsafePlugin;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.isPomPackageType;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestJar;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.setQuarkusCommunityVersion;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.setQuarkusPlatformVersion;
@@ -142,9 +145,40 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     @Override
     public List<Dependency> dependencies() {
-        if (mavenProject.getDependencies() == null || mavenProject.getDependencies().isEmpty()) {
+        var originalDependencies = mavenProject.getOriginalModel().getDependencies();
+        if (originalDependencies == null || originalDependencies.isEmpty()) {
             return List.of();
         }
+        originalDependencies.removeIf(dep -> {
+            // deployment dependencies in IT modules like this:
+            // <version>${project.version}</version>
+            // <type>pom</type>
+            // <scope>test</scope>
+            // <exclusions>
+            //  <exclusion>
+            //  <groupId>*</groupId>
+            //  <artifactId>*</artifactId>
+            //  </exclusion>
+            // </exclusions>
+            // they exist to enforce build order, they are not managed (with POM type) and may not be resolved
+            // users won't have them in their Quarkus applications, therefore we need to remove them
+            // And I have also seen it in at least one extension module when RESTEasy Classic declared such a dependency
+            // on quarkus-undertow-deployment, therefore we remove it from everywhere
+            // additionally, this removes non-deployment dependencies as well, main motivation was 'quarkus-bom-test'
+            // in virtual threads IT module parent, it is added as a dependency (?? order probably) but we really don't
+            // want to use their versions, preferably we use RHBQ platform BOM and fallback only for non-managed deps
+            return isQuarkusTestScopeDepWithExclusions(dep) && isPomPackageType(dep);
+        });
+        // plus: in some cases like Maven invoker tests, this is also used for non-deployment modules
+        // not quite sure why, probably same ordering reasons, but that is why we don't test for '-deployment' postfix
+        originalDependencies.stream().filter(this::isQuarkusTestScopeDepWithExclusions)
+                .forEach(d -> {
+                    d.setExclusions(new ArrayList<>());
+                    if (isPomPackageType(d) && isIntegrationTestModule()) {
+                        d.setType(JAR);
+                    }
+                });
+
         List<Dependency> result = new ArrayList<>();
         if (isExtensionDeploymentModule) {
             var self = new Dependency();
@@ -188,24 +222,6 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                 result.add(dependency);
             });
         } else {
-            mavenProject.getOriginalModel().getDependencies().removeIf(dep -> {
-                // deployment dependencies in IT modules like this:
-                // <version>${project.version}</version>
-                // <type>pom</type>
-                // <scope>test</scope>
-                // <exclusions>
-                //  <exclusion>
-                //  <groupId>*</groupId>
-                //  <artifactId>*</artifactId>
-                //  </exclusion>
-                // </exclusions>
-                // they exist to enforce build order, they are not managed (with POM type) and may not be resolved
-                // users won't have them in their Quarkus applications, therefore we need to remove them
-                return isDeploymentArtifact(dep) && TEST_SCOPE.equalsIgnoreCase(dep.getScope())
-                        && ("${project.version}".equalsIgnoreCase(dep.getVersion())
-                        || version().equalsIgnoreCase(dep.getVersion()))
-                        && POM.equalsIgnoreCase(dep.getType());
-            });
             mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
                 var dependency = dep.clone();
                 if (COMPILE_SCOPE.equalsIgnoreCase(dependency.getScope())) {
@@ -268,6 +284,15 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             }
         });
         return List.copyOf(result);
+    }
+
+    private boolean isQuarkusTestScopeDepWithExclusions(Dependency dep) {
+        return TEST_SCOPE.equalsIgnoreCase(dep.getScope())
+                && dep.getArtifactId().startsWith("quarkus-")
+                && (hasThisProjectVersion(dep) || version().equalsIgnoreCase(dep.getVersion()))
+                && dep.getExclusions().size() == 1
+                && ANY.equalsIgnoreCase(dep.getExclusions().get(0).getGroupId())
+                && ANY.equalsIgnoreCase(dep.getExclusions().get(0).getArtifactId());
     }
 
     private boolean notAccompaniedWithDeploymentDep(Dependency dependency) {
