@@ -59,7 +59,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     private static final String JAVA_FILE_EXTENSION = ".java";
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
     private static final Set<String> IGNORED_PLUGINS = Set.of("forbiddenapis",
-            "templating-maven-plugin", "quarkus-maven-plugin", "maven-enforcer-plugin", "impsort-maven-plugin");
+            "templating-maven-plugin", "maven-enforcer-plugin", "impsort-maven-plugin");
 
     private ProjectImpl(MavenProject mavenProject, String relativePath, ExtractionSummary summary) {
         this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath), summary);
@@ -359,7 +359,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             Path sourceProjectSrcTestJavaPath = projectPath().resolve("src").resolve("test").resolve("java");
             if (Files.exists(sourceProjectSrcTestJavaPath)) {
                 try(var pathStream = Files.walk(sourceProjectSrcTestJavaPath)) {
-                    return pathStream.anyMatch(p -> p.endsWith(JAVA_FILE_EXTENSION));
+                    return pathStream.anyMatch(p -> p.toString().endsWith(JAVA_FILE_EXTENSION));
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to detect whether '%s' extension module contains test "
                             .formatted(sourceProjectSrcTestJavaPath), e);
@@ -475,13 +475,14 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                     boolean noExecutions = plugin.getExecutions() == null || plugin.getExecutions().isEmpty();
                     if (noDeps && noConfig && noExecutions) {
                         return true;
-                    } else if (plugin.getExecutions().size() == 1) {
-                        var pluginExecution = plugin.getExecutions().get(0);
-                        return "default-compile".equalsIgnoreCase(pluginExecution.getId());
-                    } else {
+                    } else if (isExtensionDeploymentModule) {
+                        if (plugin.getExecutions().size() == 1) {
+                            var pluginExecution = plugin.getExecutions().get(0);
+                            return "default-compile".equalsIgnoreCase(pluginExecution.getId());
+                        }
                         // TODO: drop 'quarkus-extension-processor' if present
-                        return false;
                     }
+                    // FIXME: drop "project.version" from extension processor
                 }
                 return false;
             });

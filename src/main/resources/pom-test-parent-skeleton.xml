@@ -19,7 +19,6 @@
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>
-        <quarkus-maven-plugin.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</quarkus-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -100,22 +99,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{quarkus-maven-plugin.version}</version>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                            <goal>generate-code</goal>
-                            <goal>generate-code-tests</goal>
-                            <goal>native-image-agent</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$USE-EXTRACTED-PROPERTIES{version.compiler.plugin}</version>

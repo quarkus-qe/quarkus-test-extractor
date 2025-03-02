@@ -6,10 +6,8 @@ import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
-import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
-import org.codehaus.plexus.util.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +18,7 @@ import java.util.Objects;
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.POM_XML;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.copyDirectory;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.writeMavenModel;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
@@ -64,6 +63,7 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void copyWholeProject(Project project) {
+        copyAllFilesInProjectExceptForPom(project);
         Model model = project.originalModel();
         if (project.isDirectSubModule()) {
             Parent parent = model.getParent();
@@ -98,7 +98,7 @@ final class ProjectWriterImpl implements ProjectWriter {
     private static void copyAllFilesInProjectExceptForPom(Project project) {
         File sourceProjectDir = project.projectPath().toFile();
         File targetProjectDir = getTargetProjectDirPath(project).toFile();
-        MavenUtils.copyDirectory(sourceProjectDir, targetProjectDir);
+        copyDirectory(sourceProjectDir, targetProjectDir);
         try {
             Files.deleteIfExists(getTargetProjectDirPath(project).resolve(POM_XML));
         } catch (IOException e) {
@@ -113,13 +113,7 @@ final class ProjectWriterImpl implements ProjectWriter {
         Path targetProjectSrcTestPath = getTargetProjectDirPath(project).resolve("src").resolve("test");
         File targetProjectSrcTestDir = targetProjectSrcTestPath.toFile();
         targetProjectSrcTestDir.mkdirs();
-        try {
-            FileUtils.copyDirectory(sourceProjectSrcTestDir, targetProjectSrcTestDir);
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    "Failed to copy extension tests from '%s' to '%s'".formatted(
-                            sourceProjectSrcTestPath, targetProjectSrcTestPath), e);
-        }
+        copyDirectory(sourceProjectSrcTestDir, targetProjectSrcTestDir);
     }
 
     private static void createMavenModule(Project project, Model testModel, Path testModelPath) {
