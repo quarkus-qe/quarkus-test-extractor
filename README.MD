@@ -7,7 +7,10 @@ It is useful if you need to verify that your build of Quarkus works as expected.
 # Prerequisites
 
 Installed Git and Maven 3.9.9 or newer 3.X version. Only supported OS is Fedora / RHEL.
-If you plan to push extracted tests to the Quarkus QE Extracted Tests project, valid GitHub token must be available.
+If you plan to push extracted tests to the Quarkus QE Extracted Tests project:
+- valid GitHub token must be available as `GH_TOKEN` environment variable
+- GitHub repository must be set as `GH_REPO` environment variable
+- GH CLI must be installed
 
 # Use the `extract-tests.sh` script to extract tests
 
@@ -23,6 +26,8 @@ chmod +x extract-tests.sh
 * Build this project (skipped when the plugin artifacts are detected)
 * Clone Quarkus main project (skipped when Quarkus project directory contains a POM file)
 * Go to Quarkus main project (skipped when Quarkus project directory contains a POM file)
+* Checkout specified Quarkus tag or branch (skipped when Quarkus project directory contains a POM file)
+* Build Quarkus (because some artifacts are not available in Maven central)
 * Extract tests from extensions deployment modules and integration test modules
 * Summarize extraction, e.g. what dependency versions are hardcoded because they are not managed by Quarkus BOM
 * If explicitly enabled, push tests to Quarkus QE Extracted Tests project:
@@ -35,16 +40,17 @@ chmod +x extract-tests.sh
 
 The `extract-tests.sh` script accepts following options:
 
-| Option | Supported values        | Description                                            | Default value                                         |
-|--------|-------------------------|--------------------------------------------------------|-------------------------------------------------------|
-| -l     | SSH git link            | Quarkus project URL                                    | git@github.com:quarkusio/quarkus.git                  |
-| -b     | existing branch         | Quarkus project branch                                 | `main`                                                |
-| -d     | path to directory       | Quarkus project directory                              | `.`                                                   |
-| -v     | no values               | Log all messages like Quarkus build                    | silent unless super verbose mode is enabled with `x`  |
-| -x     | no values               | Enable Maven plugin goal execution debugging with `-X` | silent                                                |
-| -t     | path to directory       | Where to put extracted tests                           | `/tmp/extracted-tests`                                |
-| -u     | HTTPS link              | Quarkus QE Extracted Tests project URL                 | git@github.com:quarkus-qe/quarkus-extracted-tests.git |
-| -n     | branch (existing / new) | Quarkus QE Extracted Tests target branch               | value of the `-b` option                              |
-| -p     | no values               | If to push extracted tests to the project              | not pushed                                            |
-| -w     | path to directory       | Working directory (e.g. where this plugin is built)    | `/tmp/test-extractor`                                 |
+| Option | Supported values        | Description                                                       | Default value                                               |
+|--------|-------------------------|-------------------------------------------------------------------|-------------------------------------------------------------|
+| -l     | SSH git link            | Quarkus project URL                                               | `git@github.com:quarkusio/quarkus.git`                      |
+| -b     | existing branch or tag  | Quarkus project tag or branch                                     | current branch if project already existed, `main` otherwise |
+| -d     | path to directory       | Quarkus project directory                                         | `.`                                                         |
+| -v     | no values               | Log all messages like Quarkus build                               | silent unless super verbose mode is enabled with `x`        |
+| -x     | no values               | Enable Maven plugin goal execution debugging with `-X`            | silent                                                      |
+| -t     | path to directory       | Where to put extracted tests                                      | `/tmp/extracted-tests`                                      |
+| -u     | OWNER / REPO syntax     | Quarkus QE Extracted Tests project                                | `quarkus-qe/quarkus-extracted-tests`                        |
+| -n     | branch (existing / new) | Quarkus QE Extracted Tests target branch                          | value of the `-b` option                                    |
+| -p     | no values               | If to push extracted tests to the project                         | not pushed                                                  |
+| -w     | path to directory       | Working directory (e.g. where this plugin is built)               | `/tmp/test-extractor`                                       |
+| -s     | no values               | Skip Quarkus build if you are certain all artifacts are available | Quarkus is built everytime                                  |
 
