@@ -35,13 +35,16 @@ chmod +x extract-tests.sh
 
 The `extract-tests.sh` script accepts following options:
 
-| Option | Supported values        | Description                               | Default value                                             |
-|--------|-------------------------|-------------------------------------------|-----------------------------------------------------------|
-| -l     | HTTPS link              | Quarkus project URL                       | https://github.com/quarkusio/quarkus.git                  |
-| -b     | existing branch         | Quarkus project branch                    | `main`                                                    |
-| -d     | path to directory       | Quarkus project directory                 | `.`                                                       |
-| -v     | no values               | Log all messages like Quarkus build       | silent                                                    |
-| -t     | path to directory       | Where to put extracted tests              | `/tmp/extracted-tests`                                    |
-| -u     | HTTPS link              | Quarkus QE Extracted Tests project URL    | https://github.com/quarkus-qe/quarkus-extracted-tests.git |
-| -n     | branch (existing / new) | Quarkus QE Extracted Tests target branch  | value of the `-b` option                                  |
-| -e     | no values               | If to push extracted tests to the project | not pushed                                                |
+| Option | Supported values        | Description                                            | Default value                                         |
+|--------|-------------------------|--------------------------------------------------------|-------------------------------------------------------|
+| -l     | SSH git link            | Quarkus project URL                                    | git@github.com:quarkusio/quarkus.git                  |
+| -b     | existing branch         | Quarkus project branch                                 | `main`                                                |
+| -d     | path to directory       | Quarkus project directory                              | `.`                                                   |
+| -v     | no values               | Log all messages like Quarkus build                    | silent unless super verbose mode is enabled with `x`  |
+| -x     | no values               | Enable Maven plugin goal execution debugging with `-X` | silent                                                |
+| -t     | path to directory       | Where to put extracted tests                           | `/tmp/extracted-tests`                                |
+| -u     | HTTPS link              | Quarkus QE Extracted Tests project URL                 | git@github.com:quarkus-qe/quarkus-extracted-tests.git |
+| -n     | branch (existing / new) | Quarkus QE Extracted Tests target branch               | value of the `-b` option                              |
+| -p     | no values               | If to push extracted tests to the project              | not pushed                                            |
+| -w     | path to directory       | Working directory (e.g. where this plugin is built)    | `/tmp/test-extractor`                                 |
+

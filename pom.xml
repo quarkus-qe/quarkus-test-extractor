@@ -61,6 +61,14 @@
                 <configuration>
                     <goalPrefix>quarkus-qe</goalPrefix>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>generated-helpmojo</id>
+                        <goals>
+                            <goal>helpmojo</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
