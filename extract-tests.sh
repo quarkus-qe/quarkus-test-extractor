@@ -169,6 +169,7 @@ rm -r -f quarkus-bom-managed-deps quarkus-build-parent-context quarkus-parent-po
 
 # push extracted tests to dedicated GitHub project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
+  echo "Tests extracted for Quarkus $QUARKUS_GIT_HEAD" > README.MD
   git add *
   GIT_COMMIT_OUTPUT=$(git commit -am "Add tests extracted from $QUARKUS_GIT_HEAD")
   if [[ $GIT_COMMIT_OUTPUT == *"nothing to commit"* ]]; then
