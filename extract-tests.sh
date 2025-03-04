@@ -169,6 +169,9 @@ rm -r -f quarkus-bom-managed-deps quarkus-build-parent-context quarkus-parent-po
 
 # push extracted tests to dedicated GitHub project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
+  mkdir -p .github/workflows
+  wget -O .github/workflows/branches-pr.yaml --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 https://raw.githubusercontent.com/quarkus-qe/quarkus-extracted-tests/refs/heads/main/.github/workflows/branches-pr.yaml
+
   echo "Tests extracted for Quarkus $QUARKUS_GIT_HEAD" > README.MD
   git add *
   GIT_COMMIT_OUTPUT=$(git commit -am "Add tests extracted from $QUARKUS_GIT_HEAD")
