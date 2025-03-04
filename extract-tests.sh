@@ -171,18 +171,21 @@ rm -r -f quarkus-bom-managed-deps quarkus-build-parent-context quarkus-parent-po
 
 # push extracted tests to dedicated GitHub project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
-  push_remote='origin'
+  PUSH_REMOTE='origin'
   if [[ -n ${GH_TOKEN} ]]; then
     echo "Detected GitHub token, setting up git user config"
     gh auth setup-git
     git config --local user.email "quarkus-qe@redhat.com"
     git config --local user.name "QuarkusQE"
     git remote add qe-fork https://github.com/QuarkusQE/quarkus-extracted-tests.git
-    push_remote='qe-fork'
+    PUSH_REMOTE='qe-fork'
   fi
 
   mkdir -p .github/workflows
   wget -O .github/workflows/branches-pr.yaml --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 https://raw.githubusercontent.com/quarkus-qe/quarkus-extracted-tests/refs/heads/main/.github/workflows/branches-pr.yaml
+
+  # some tests contains so called "secrets" and it's impossible to convince GH they are no secrets
+  wget -O .github/secret_scanning.yml --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 https://raw.githubusercontent.com/quarkus-qe/quarkus-extracted-tests/refs/heads/main/.github/secret_scanning.yml
 
   echo "Tests extracted for Quarkus $QUARKUS_GIT_HEAD" > README.MD
   git add *
@@ -194,10 +197,11 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
   if [ "$VERBOSE" = true ]; then
     git status
   fi
-  git checkout -b "temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
-  git push $push_remote "temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
+  PR_BRANCH="temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
+  git checkout -b $PR_BRANCH
+  git push $PUSH_REMOTE $PR_BRANCH
   echo 'Opening PR in project' $EXTRACTED_TESTS_PROJECT
   PR_MESSAGE="Adding tests extracted from $QUARKUS_URL $QUARKUS_GIT_CHECKOUT with HEAD on $QUARKUS_GIT_HEAD"
   PR_TITLE="Add new tests extracted from $QUARKUS_GIT_CHECKOUT tag"
-  gh pr create -r 'QuarkusQE' -b "$PR_MESSAGE" -t "$PR_TITLE" -B "$EXTRACTED_TESTS_PROJECT_BRANCH" -R "$EXTRACTED_TESTS_PROJECT"
+  gh pr create -r 'QuarkusQE' -b "$PR_MESSAGE" -t "$PR_TITLE" -B "$EXTRACTED_TESTS_PROJECT_BRANCH" -R "$EXTRACTED_TESTS_PROJECT" -H $PR_BRANCH
 fi
