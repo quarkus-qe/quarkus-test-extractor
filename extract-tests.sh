@@ -10,8 +10,9 @@ PUSH_EXTRACTED_TESTS=false
 WORKING_DIR='/tmp/test-extractor'
 SUPER_VERBOSE=false
 SKIP_QUARKUS_BUILD=false
+GH_TOKEN=''
 
-while getopts l:b:d:vt:u:n:pxw:s opt
+while getopts l:b:d:vt:u:n:pxw:sg: opt
 do
     case "${opt}" in
         l) QUARKUS_URL=${OPTARG};;
@@ -25,6 +26,7 @@ do
         w) WORKING_DIR=${OPTARG};;
         x) SUPER_VERBOSE=true;;
         s) SKIP_QUARKUS_BUILD=true;;
+        g) GH_TOKEN=${OPTARG};;
     esac
 done
 
@@ -169,6 +171,13 @@ rm -r -f quarkus-bom-managed-deps quarkus-build-parent-context quarkus-parent-po
 
 # push extracted tests to dedicated GitHub project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
+  if [[ -n ${GH_TOKEN} ]]; then
+    echo "Detected GitHub token, setting up git user config"
+    gh auth setup-git
+    git config --local user.email "quarkus-qe@redhat.com"
+    git config --local user.name "QuarkusQE"
+  fi
+
   mkdir -p .github/workflows
   wget -O .github/workflows/branches-pr.yaml --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 https://raw.githubusercontent.com/quarkus-qe/quarkus-extracted-tests/refs/heads/main/.github/workflows/branches-pr.yaml
 
@@ -187,5 +196,5 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
   echo 'Opening PR in project' $EXTRACTED_TESTS_PROJECT
   PR_MESSAGE="Adding tests extracted from $QUARKUS_URL $QUARKUS_GIT_CHECKOUT with HEAD on $QUARKUS_GIT_HEAD"
   PR_TITLE="Add new tests extracted from $QUARKUS_GIT_CHECKOUT tag"
-  gh pr create -a '@me' -r 'QuarkusQE' -b "$PR_MESSAGE" -t "$PR_TITLE" -B "$EXTRACTED_TESTS_PROJECT_BRANCH" -R "$EXTRACTED_TESTS_PROJECT"
+  gh pr create -r 'QuarkusQE' -b "$PR_MESSAGE" -t "$PR_TITLE" -B "$EXTRACTED_TESTS_PROJECT_BRANCH" -R "$EXTRACTED_TESTS_PROJECT"
 fi
