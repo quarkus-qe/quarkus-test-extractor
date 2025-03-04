@@ -42,7 +42,7 @@ The `extract-tests.sh` script accepts following options:
 
 | Option | Supported values        | Description                                                       | Default value                                               |
 |--------|-------------------------|-------------------------------------------------------------------|-------------------------------------------------------------|
-| -l     | SSH git link            | Quarkus project URL                                               | `git@github.com:quarkusio/quarkus.git`                      |
+| -l     | HTTPS git link          | Quarkus project URL                                               | `https://github.com/quarkusio/quarkus.git`                  |
 | -b     | existing branch or tag  | Quarkus project tag or branch                                     | current branch if project already existed, `main` otherwise |
 | -d     | path to directory       | Quarkus project directory                                         | `.`                                                         |
 | -v     | no values               | Log all messages like Quarkus build                               | silent unless super verbose mode is enabled with `x`        |

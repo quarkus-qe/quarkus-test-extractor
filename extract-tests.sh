@@ -1,6 +1,6 @@
 #!/bin/bash
 
-QUARKUS_URL='git@github.com:quarkusio/quarkus.git'
+QUARKUS_URL='https://github.com/quarkusio/quarkus.git'
 QUARKUS_GIT_CHECKOUT='main'
 QUARKUS_SOURCE_DIR=$PWD
 VERBOSE=false
@@ -60,7 +60,7 @@ exitCode=$?
 if [ $exitCode -ne 0 ]; then
     mkdir -p $WORKING_DIR
     cd $WORKING_DIR
-    git clone git@github.com:quarkus-qe/quarkus-test-extractor.git --depth=1
+    git clone https://github.com/quarkus-qe/quarkus-test-extractor.git --depth=1
     cd quarkus-test-extractor
     mvn clean install -DskipTests -DskipITs
     cd $PREVIOUS_DIR
