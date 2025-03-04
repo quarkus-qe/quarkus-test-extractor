@@ -132,7 +132,7 @@ fi
 # build Quarkus because some artifacts are not available in Maven central
 if [ "$SKIP_QUARKUS_BUILD" = false ]; then
   echo 'Building Quarkus'
-  MAVEN_OPTS="-Xmx4g" ./mvnw -Dquickly
+  MAVEN_OPTS="-Xmx4g" ./mvnw -B --no-transfer-progress -Dquickly
 else
   echo 'Skipping Quarkus build'
 fi
