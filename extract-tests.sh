@@ -171,11 +171,14 @@ rm -r -f quarkus-bom-managed-deps quarkus-build-parent-context quarkus-parent-po
 
 # push extracted tests to dedicated GitHub project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
+  push_remote='origin'
   if [[ -n ${GH_TOKEN} ]]; then
     echo "Detected GitHub token, setting up git user config"
     gh auth setup-git
     git config --local user.email "quarkus-qe@redhat.com"
     git config --local user.name "QuarkusQE"
+    git remote add qe-fork https://github.com/QuarkusQE/quarkus-extracted-tests.git
+    push_remote='qe-fork'
   fi
 
   mkdir -p .github/workflows
@@ -192,7 +195,7 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
     git status
   fi
   git checkout -b "temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
-  git push origin "temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
+  git push $push_remote "temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
   echo 'Opening PR in project' $EXTRACTED_TESTS_PROJECT
   PR_MESSAGE="Adding tests extracted from $QUARKUS_URL $QUARKUS_GIT_CHECKOUT with HEAD on $QUARKUS_GIT_HEAD"
   PR_TITLE="Add new tests extracted from $QUARKUS_GIT_CHECKOUT tag"
