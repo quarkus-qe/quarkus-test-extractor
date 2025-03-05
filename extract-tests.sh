@@ -113,6 +113,12 @@ fi
 
 # if we also want to push the extracted tests, we need to prepare git project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
+  if [[ -n ${GH_TOKEN} ]]; then
+    echo "Detected GitHub token, setting up git user config"
+    gh auth setup-git
+    git config --local user.email "quarkus-qe@redhat.com"
+    git config --local user.name "QuarkusQE"
+  fi
   echo 'Preparing' $EXTRACTED_TESTS_PROJECT 'project'
   PREVIOUS_DIR=$PWD
   cd $TARGET_DIR/..
@@ -121,6 +127,7 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
   gh repo clone $EXTRACTED_TESTS_PROJECT $TARGET_DIR_NAME -- --depth=1
   cd $TARGET_DIR_NAME
   git checkout -B $EXTRACTED_TESTS_PROJECT_BRANCH
+  git push origin $EXTRACTED_TESTS_PROJECT_BRANCH -f
   if [ -n "$(ls -A . 2>/dev/null)" ]
   then
     # remove all files as we will provide a new version (we will extract new tests)
@@ -171,13 +178,6 @@ rm -r -f quarkus-bom-managed-deps quarkus-build-parent-context quarkus-parent-po
 
 # push extracted tests to dedicated GitHub project
 if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
-  if [[ -n ${GH_TOKEN} ]]; then
-    echo "Detected GitHub token, setting up git user config"
-    gh auth setup-git
-    git config --local user.email "quarkus-qe@redhat.com"
-    git config --local user.name "QuarkusQE"
-  fi
-
   mkdir -p .github/workflows
   wget -O .github/workflows/branches-pr.yaml --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 https://raw.githubusercontent.com/quarkus-qe/quarkus-extracted-tests/refs/heads/main/.github/workflows/branches-pr.yaml
 
