@@ -199,7 +199,7 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
   fi
   PR_BRANCH="temporary-branch/pr/$QUARKUS_GIT_CHECKOUT"
   git checkout -b $PR_BRANCH
-  git push $PUSH_REMOTE $PR_BRANCH
+  git push $PUSH_REMOTE $PR_BRANCH -f
   echo 'Opening PR in project' $EXTRACTED_TESTS_PROJECT
   PR_MESSAGE="Adding tests extracted from $QUARKUS_URL $QUARKUS_GIT_CHECKOUT with HEAD on $QUARKUS_GIT_HEAD"
   PR_TITLE="Add new tests extracted from $QUARKUS_GIT_CHECKOUT tag"
