@@ -185,6 +185,14 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
   wget -O .github/secret_scanning.yml --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 https://raw.githubusercontent.com/quarkus-qe/quarkus-extracted-tests/refs/heads/main/.github/secret_scanning.yml
 
   echo "Tests extracted for Quarkus $QUARKUS_GIT_HEAD" > README.MD
+  # Yes! This auth block is repeated for a second time, not sure why is it necessary but if this is not done yet again
+  # 'identity unknown' is reported and things don't work out
+  if [[ -n ${GH_TOKEN} ]]; then
+    echo "Detected GitHub token, setting up git user config"
+    gh auth setup-git
+    git config --local user.email "quarkus-qe@redhat.com"
+    git config --local user.name "QuarkusQE"
+  fi
   git add *
   GIT_COMMIT_OUTPUT=$(git commit -am "Add tests extracted from $QUARKUS_GIT_HEAD")
   if [[ $GIT_COMMIT_OUTPUT == *"nothing to commit"* ]]; then
