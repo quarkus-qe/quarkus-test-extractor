@@ -79,8 +79,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                 //   differs from profiles active during a test execution, so basically,
                 //   plugins and dependencies declared in inactive profiles are not resolved
                 //   one day when we hit issues we need to rewrite this
-                prepareBuild(profile.getBuild(), profile.getBuild().getPlugins(),
-                        profile.getBuild().getPluginManagement(), this);
+                // so these are plugins from <build> rather than resolved in the profile
+                // my point is that if profiles are not active, they can't have resolved plugin versions, it's not best
+                List<Plugin> buildPlugins = mavenProject.getBuildPlugins();
+                PluginManagement pluginManagement = mavenProject.getPluginManagement();
+                prepareBuild(profile.getBuild(), buildPlugins, pluginManagement, this);
             }
             profile.setDependencyManagement(prepareDependencyManagement(profile.getDependencyManagement(), this));
             var dependencies = profile.getDependencies();
@@ -404,6 +407,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         var model = mavenProject.getOriginalModel().clone();
         model.setBuild(build());
         model.setDependencies(dependencies());
+        model.setProfiles(profiles());
         return model;
     }
 
@@ -492,7 +496,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                     // as for others, they are not managed so that we still know they are needed,
                     // and we record that need in the extraction summary; we need to understand
                     // what plugins are used as inspecting a thousand of modules is impossible
-                    if (plugin.getVersion() == null && isNotSurefireOrFailsafePlugin(plugin.getArtifactId())) {
+                    if ((plugin.getVersion() == null) && isNotSurefireOrFailsafePlugin(plugin.getArtifactId())) {
                         String pluginVersion = null;
                         if (!isQuarkusParentPomProject(project)) {
                             pluginVersion = QuarkusParentPom.getPluginVersion(plugin);
