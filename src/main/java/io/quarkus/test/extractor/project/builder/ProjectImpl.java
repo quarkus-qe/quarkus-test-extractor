@@ -3,6 +3,7 @@ package io.quarkus.test.extractor.project.builder;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.BuildBase;
@@ -35,7 +36,9 @@ import static io.quarkus.test.extractor.project.utils.MavenUtils.ANY;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.JAR;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.TEST_SCOPE;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.hasTestScope;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.hasThisProjectVersion;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotCentralRepository;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotSurefireOrFailsafePlugin;
@@ -47,7 +50,6 @@ import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.dropDeploymentPostfix;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.COMPILE_SCOPE;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.TEST_SCOPE;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestModuleProperty;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isDeploymentArtifact;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
@@ -171,18 +173,14 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             // want to use their versions, preferably we use RHBQ platform BOM and fallback only for non-managed deps
             return isQuarkusTestScopeDepWithExclusions(dep) && isPomPackageType(dep);
         });
-        // plus: in some cases like Maven invoker tests, this is also used for non-deployment modules
-        // not quite sure why, probably same ordering reasons, but that is why we don't test for '-deployment' postfix
-        originalDependencies.stream().filter(this::isQuarkusTestScopeDepWithExclusions)
-                .forEach(d -> {
-                    d.setExclusions(new ArrayList<>());
-                    if (isPomPackageType(d) && isIntegrationTestModule()) {
-                        d.setType(JAR);
-                    }
-                });
 
         List<Dependency> result = new ArrayList<>();
         if (isExtensionDeploymentModule) {
+            // plus: in some cases like Maven invoker tests, this is also used for non-deployment modules
+            // not quite sure why, probably same ordering reasons, but that is why we don't test for '-deployment' postfix
+            originalDependencies.stream().filter(this::isQuarkusTestScopeDepWithExclusions)
+                    .forEach(d -> d.setExclusions(new ArrayList<>()));
+
             var self = new Dependency();
             self.setGroupId(mavenProject.getGroupId());
             self.setArtifactId(mavenProject.getArtifactId());
@@ -195,7 +193,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             result.add(self);
             mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
                 var dependency = dep.clone();
-                if (!TEST_SCOPE.equalsIgnoreCase(dependency.getScope())) {
+                if (!MavenUtils.hasTestScope(dependency)) {
                     dependency.setScope(TEST_SCOPE);
                 }
                 // some test scope dependencies probably are not managed by Quarkus BOM
@@ -224,6 +222,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                 result.add(dependency);
             });
         } else {
+            // IT modules may contain even POM type dependencies without exclusions or a test scope
+            // in some cases they are not resolvable, like 'io.quarkus.gradle.plugin' in the
+            // 'quarkus-integration-test-gradle-plugin' integration module
+            originalDependencies.removeIf(dep -> isQuarkusOwnDependency(dep, version()) && isPomPackageType(dep));
+
             mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
                 var dependency = dep.clone();
                 if (COMPILE_SCOPE.equalsIgnoreCase(dependency.getScope())) {
@@ -289,12 +292,20 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     }
 
     private boolean isQuarkusTestScopeDepWithExclusions(Dependency dep) {
-        return TEST_SCOPE.equalsIgnoreCase(dep.getScope())
-                && dep.getArtifactId().startsWith("quarkus-")
-                && (hasThisProjectVersion(dep) || version().equalsIgnoreCase(dep.getVersion()))
+        // else if extension because quarkus-undertow-deployment in quarkus-resteasy-deployment
+        // has wrong scope in model but not in POM for whatever reason
+        return (hasTestScope(dep) || isExtensionDeploymentModule)
+                && isQuarkusOwnDependency(dep, version())
                 && dep.getExclusions().size() == 1
                 && ANY.equalsIgnoreCase(dep.getExclusions().get(0).getGroupId())
                 && ANY.equalsIgnoreCase(dep.getExclusions().get(0).getArtifactId());
+    }
+
+    private static boolean isQuarkusOwnDependency(Dependency dep, String projectVersion) {
+        String artifactId = dep.getArtifactId();
+        return (artifactId.startsWith("quarkus-") || artifactId.startsWith("io.quarkus"))
+                && (dep.getVersion() == null || dep.getVersion().isEmpty()
+                || hasThisProjectVersion(dep) || projectVersion.equalsIgnoreCase(dep.getVersion()));
     }
 
     private boolean notAccompaniedWithDeploymentDep(Dependency dependency) {

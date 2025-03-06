@@ -138,6 +138,10 @@ public final class MavenUtils {
         return TEST_JAR.equalsIgnoreCase(dependency.getType());
     }
 
+    public static boolean hasTestScope(Dependency dependency) {
+        return TEST_SCOPE.equalsIgnoreCase(dependency.getType());
+    }
+
     public static void setQuarkusPlatformVersion(Dependency dependency) {
         dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
     }
