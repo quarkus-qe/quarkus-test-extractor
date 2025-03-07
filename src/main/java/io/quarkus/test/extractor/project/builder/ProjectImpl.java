@@ -33,7 +33,6 @@ import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTe
 import static io.quarkus.test.extractor.project.result.ParentProject.getPluginVersionInParentProps;
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.ANY;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.JAR;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.TEST_SCOPE;
@@ -56,7 +55,7 @@ import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParen
 import static io.quarkus.test.extractor.project.utils.PluginUtils.prefixWithTests;
 
 record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExtensionDeploymentModule,
-                   ExtractionSummary extractionSummary) implements Project {
+                   ExtractionSummary extractionSummary, String originalProjectName) implements Project {
 
     private static final String JAVA_FILE_EXTENSION = ".java";
     private static final Path CURRENT_DIR = Path.of(".").toAbsolutePath();
@@ -64,7 +63,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             "templating-maven-plugin", "maven-enforcer-plugin", "impsort-maven-plugin");
 
     private ProjectImpl(MavenProject mavenProject, String relativePath, ExtractionSummary summary) {
-        this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath), summary);
+        this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath), summary, mavenProject.getName());
     }
 
     ProjectImpl(MavenProject mavenProject, ExtractionSummary extractionSummary) {

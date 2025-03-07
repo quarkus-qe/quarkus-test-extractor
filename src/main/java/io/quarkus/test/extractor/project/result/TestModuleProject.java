@@ -31,6 +31,7 @@ public final class TestModuleProject {
         }
         model.setBuild(project.build());
         model.setProfiles(project.profiles());
+        model.setDescription("Tests extracted from project " + project.originalProjectName());
         return model;
     }
 }
