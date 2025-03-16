@@ -118,5 +118,13 @@ public final class ParentProject {
         managedDependency.setVersion("$USE-EXTRACTED-PROPERTIES{project.version}");
         managedDependency.setArtifactId(project.artifactId());
         MAVEN_MODEL.getDependencyManagement().addDependency(managedDependency);
+        if (project.artifactId().contains("integration-tests")) {
+            MAVEN_MODEL
+                    .getProfiles()
+                    .stream()
+                    .filter(p -> "integration-tests-managed-modules".equalsIgnoreCase(p.getId()))
+                    .findFirst()
+                    .ifPresent(profile -> profile.addModule(project.relativePath()));
+        }
     }
 }

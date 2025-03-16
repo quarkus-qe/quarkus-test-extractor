@@ -84,6 +84,31 @@
             </modules>
         </profile>
         <profile>
+            <id>extension-tests-managed-modules</id>
+            <activation>
+                <property>
+                    <name>extension-tests-managed-modules</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>extensions/quarkus-arc-test-supplement</module>
+                <module>extensions/quarkus-security-test-utils</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>integration-tests-managed-modules</id>
+            <activation>
+                <property>
+                    <name>integration-tests-managed-modules</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <modules>
+                <!-- to be generated -->
+            </modules>
+        </profile>
+        <profile>
             <id>native</id>
             <activation>
                 <property>
