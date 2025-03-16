@@ -17,6 +17,8 @@ import static io.quarkus.test.extractor.project.utils.MavenUtils.hasJarPackaging
 
 public final class ParentProject {
 
+    public static final String QUARKUS_ARC_TEST_SUPPLEMENT = "test-supplement";
+    public static final String QUARKUS_SECURITY_TEST_UTILS = "security/test-utils";
     // super special cases that are not really a test modules, but we still need them
     private static final Set<String> COPY_AS_IS_ARTIFACT_IDS = Set.of("quarkus-integration-test-class-transformer-parent",
             "quarkus-integration-test-class-transformer-deployment", "quarkus-integration-test-class-transformer",
@@ -25,7 +27,8 @@ public final class ParentProject {
             "quarkus-integration-test-test-extension-extension-deployment",
             "integration-test-extension-that-defines-junit-test-extensions-deployment",
             "integration-test-extension-that-defines-junit-test-extensions",
-            "integration-test-extension-that-defines-junit-test-extensions-parent");
+            "integration-test-extension-that-defines-junit-test-extensions-parent",
+            "quarkus-arc-test-supplement", "quarkus-security-test-utils");
     private static final Model MAVEN_MODEL = MavenUtils.getMavenModel("pom-test-parent-skeleton.xml");
     private static final Map<String, String> PLUGIN_ARTIFACT_ID_TO_VERSION_PROP;
 
@@ -113,6 +116,13 @@ public final class ParentProject {
     }
 
     public static void addManagedProject(Project project) {
+        if (!project.isIntegrationTestModule() || !project.isDirectSubModule()) {
+            // extension modules copied as is are already in the POM;
+            // integration tests:
+            // we copy integration test module that is not a JAR (like POM parent) whole
+            // so this project is going to be already managed
+            return;
+        }
         var managedDependency = new Dependency();
         managedDependency.setGroupId("io.quarkus");
         managedDependency.setVersion("$USE-EXTRACTED-PROPERTIES{project.version}");

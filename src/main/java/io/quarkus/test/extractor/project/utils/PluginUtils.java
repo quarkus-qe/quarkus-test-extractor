@@ -1,6 +1,7 @@
 package io.quarkus.test.extractor.project.utils;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.result.ParentProject;
 import org.apache.maven.model.Dependency;
 
 import java.io.File;
@@ -39,7 +40,10 @@ public final class PluginUtils {
 
     public static boolean isExtensionDeploymentModule(String relativePath) {
         return relativePath.startsWith(EXTENSIONS + File.separator)
-                && relativePath.endsWith(File.separator + DEPLOYMENT);
+                && (relativePath.endsWith(File.separator + DEPLOYMENT)
+                || relativePath.contains(ParentProject.QUARKUS_ARC_TEST_SUPPLEMENT)
+                || relativePath.contains(ParentProject.QUARKUS_SECURITY_TEST_UTILS)
+        );
     }
 
     public static boolean isDeploymentArtifact(Dependency dependency) {
