@@ -3,7 +3,6 @@ package io.quarkus.test.extractor.project.writer;
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
-import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
 import org.apache.maven.model.Model;
@@ -15,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.POM_XML;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
@@ -47,7 +47,7 @@ final class ProjectWriterImpl implements ProjectWriter {
         if (isQuarkusBuildParent(project)) {
             copyQuarkusBuildParentToOurParentProject(project);
         } else if (isQuarkusParentPomProject(project)) {
-            QuarkusParentPom.collectPluginVersions(project);
+            collectPluginVersions(project);
         } else if (copyAsIs(project)) {
             copyWholeProject(project);
         } else if (project.containsTests()) {
@@ -123,7 +123,7 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void addToParentPomModel(Project project) {
-        if (project.isDirectSubModule()) {
+        if (project.isDirectSubModule() && project.containsTests()) {
             ParentProject.addTestModule(project.targetRelativePath(), project.targetProfileName());
         }
     }

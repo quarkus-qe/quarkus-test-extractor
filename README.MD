@@ -58,3 +58,6 @@ The `extract-tests.sh` script accepts following options:
 | -s     | no values               | Skip Quarkus build if you are certain all artifacts are available | Quarkus is built everytime                                  |
 | -g     | GitHub token            | Token used to authenticate with GitHub CLI and setup git user     | no value                                                    |
 
+This script also creates `test-extraction-log` in the directory where the script is executed.
+The file contains output of the `quarkus-test-extractor` plugin execution on individual modules.
+In verbose mode, content of this file is also written into STD OUT.

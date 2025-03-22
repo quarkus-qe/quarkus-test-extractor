@@ -38,12 +38,18 @@ public final class PluginUtils {
     private PluginUtils() {
     }
 
-    public static boolean isExtensionDeploymentModule(String relativePath) {
+    public static boolean isExtensionTestModule(String relativePath) {
         return relativePath.startsWith(EXTENSIONS + File.separator)
                 && (relativePath.endsWith(File.separator + DEPLOYMENT)
-                || relativePath.contains(ParentProject.QUARKUS_ARC_TEST_SUPPLEMENT)
-                || relativePath.contains(ParentProject.QUARKUS_SECURITY_TEST_UTILS)
-        );
+        || isExtensionsSupplementaryModule(relativePath));
+    }
+
+    /**
+     * @return true if it does not contain tests, but is required by other extension modules during testing
+     */
+    public static boolean isExtensionsSupplementaryModule(String relativePath) {
+        return relativePath.contains(ParentProject.QUARKUS_ARC_TEST_SUPPLEMENT)
+                || relativePath.contains(ParentProject.QUARKUS_SECURITY_TEST_UTILS);
     }
 
     public static boolean isDeploymentArtifact(Dependency dependency) {

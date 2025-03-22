@@ -10,6 +10,7 @@ import org.apache.maven.model.Profile;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ import static io.quarkus.test.extractor.project.utils.MavenUtils.hasJarPackaging
 
 public final class ParentProject {
 
+    // relative sub-paths for extensions subset of 'copy-as-is' artifact ids
     public static final String QUARKUS_ARC_TEST_SUPPLEMENT = "test-supplement";
     public static final String QUARKUS_SECURITY_TEST_UTILS = "security/test-utils";
     // super special cases that are not really a test modules, but we still need them
@@ -116,25 +118,27 @@ public final class ParentProject {
     }
 
     public static void addManagedProject(Project project) {
-        if (!project.isIntegrationTestModule() || !project.isDirectSubModule()) {
-            // extension modules copied as is are already in the POM;
-            // integration tests:
-            // we copy integration test module that is not a JAR (like POM parent) whole
-            // so this project is going to be already managed
-            return;
-        }
         var managedDependency = new Dependency();
         managedDependency.setGroupId("io.quarkus");
         managedDependency.setVersion("$USE-EXTRACTED-PROPERTIES{project.version}");
         managedDependency.setArtifactId(project.artifactId());
         MAVEN_MODEL.getDependencyManagement().addDependency(managedDependency);
-        if (project.artifactId().contains("integration-test")) {
-            MAVEN_MODEL
-                    .getProfiles()
-                    .stream()
-                    .filter(p -> "integration-tests-managed-modules".equalsIgnoreCase(p.getId()))
-                    .findFirst()
-                    .ifPresent(profile -> profile.addModule(project.relativePath()));
+        if (project.isIntegrationTestModule()) {
+            if (project.isDirectSubModule()) {
+                getProfile("integration-tests-managed-modules")
+                        .ifPresent(profile -> profile.addModule(project.targetRelativePath()));
+            }
+        } else {
+            getProfile("extension-tests-managed-modules")
+                    .ifPresent(profile -> profile.addModule(project.targetRelativePath()));
         }
+    }
+
+    private static Optional<Profile> getProfile(String x) {
+        return MAVEN_MODEL
+                .getProfiles()
+                .stream()
+                .filter(p -> x.equalsIgnoreCase(p.getId()))
+                .findFirst();
     }
 }

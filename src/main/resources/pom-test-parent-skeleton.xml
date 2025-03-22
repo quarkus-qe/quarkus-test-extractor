@@ -30,18 +30,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- test extensions used by other extensions but not managed by Quarkus BOM -->
-            <!-- but so far, they had been in Maven central repository -->
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-arc-test-supplement</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{quarkus.community.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-security-test-utils</artifactId>
-                <version>$USE-EXTRACTED-PROPERTIES{quarkus.community.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -92,8 +80,7 @@
                 </property>
             </activation>
             <modules>
-                <module>extensions/quarkus-arc-test-supplement</module>
-                <module>extensions/quarkus-security-test-utils</module>
+                <!-- to be generated -->
             </modules>
         </profile>
         <profile>

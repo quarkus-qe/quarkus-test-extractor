@@ -51,10 +51,12 @@ import static io.quarkus.test.extractor.project.utils.PluginUtils.dropDeployment
 import static io.quarkus.test.extractor.project.utils.MavenUtils.COMPILE_SCOPE;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestModuleProperty;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isDeploymentArtifact;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionTestModule;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionsSupplementaryModule;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.prefixWithTests;
 
-record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExtensionDeploymentModule,
+record ProjectImpl(MavenProject mavenProject, String relativePath, boolean extensionTestModule,
                    ExtractionSummary extractionSummary, String originalProjectName) implements Project {
 
     private static final String JAVA_FILE_EXTENSION = ".java";
@@ -63,7 +65,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
             "templating-maven-plugin", "maven-enforcer-plugin", "impsort-maven-plugin");
 
     private ProjectImpl(MavenProject mavenProject, String relativePath, ExtractionSummary summary) {
-        this(mavenProject, relativePath, PluginUtils.isExtensionDeploymentModule(relativePath), summary, mavenProject.getName());
+        this(mavenProject, relativePath, isExtensionTestModule(relativePath), summary, mavenProject.getName());
     }
 
     ProjectImpl(MavenProject mavenProject, ExtractionSummary extractionSummary) {
@@ -174,7 +176,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
         });
 
         List<Dependency> result = new ArrayList<>();
-        if (isExtensionDeploymentModule) {
+        if (extensionTestModule && !isExtensionsSupplementaryModule(relativePath)) {
             // plus: in some cases like Maven invoker tests, this is also used for non-deployment modules
             // not quite sure why, probably same ordering reasons, but that is why we don't test for '-deployment' postfix
             originalDependencies.stream().filter(this::isQuarkusTestScopeDepWithExclusions)
@@ -293,7 +295,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
     private boolean isQuarkusTestScopeDepWithExclusions(Dependency dep) {
         // else if extension because quarkus-undertow-deployment in quarkus-resteasy-deployment
         // has wrong scope in model but not in POM for whatever reason
-        return (hasTestScope(dep) || isExtensionDeploymentModule)
+        return (hasTestScope(dep) || (extensionTestModule && !isExtensionsSupplementaryModule(relativePath)))
                 && isQuarkusOwnDependency(dep, version())
                 && dep.getExclusions().size() == 1
                 && ANY.equalsIgnoreCase(dep.getExclusions().get(0).getGroupId())
@@ -327,7 +329,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     @Override
     public String name() {
-        if (isExtensionDeploymentModule) {
+        if (extensionTestModule && !isExtensionsSupplementaryModule(relativePath)) {
             return dropDeploymentPostfix(mavenProject.getName());
         }
         return mavenProject.getName();
@@ -340,7 +342,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     @Override
     public String artifactId() {
-        if (isExtensionDeploymentModule) {
+        if (extensionTestModule && !isExtensionsSupplementaryModule(relativePath)) {
             return prefixWithTests(dropDeploymentPostfix(mavenProject.getArtifactId()));
         }
         return mavenProject.getArtifactId();
@@ -348,15 +350,26 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     @Override
     public String targetRelativePath() {
-        return isExtensionDeploymentModule ?
-                // extensions/vertx-http/deployment -> extensions/vertx-http
-                extractRelativePath(mavenProject.getParent())
-                : relativePath;
+        // extensions/vertx-http/deployment -> extensions/vertx-http
+        if (extensionTestModule) {
+            if (isExtensionsSupplementaryModule(relativePath)) {
+                // extensions/arc/test-supplement -> extensions/arc-test-supplement
+                Path mavenProjectPath = mavenProject.getBasedir().toPath().toAbsolutePath();
+                var parent = mavenProjectPath.getParent();
+                var parentsParent = parent.getParent();
+                var newDirName = parent.getFileName() + "-" + mavenProjectPath.getFileName();
+                var newDirPath = parentsParent.resolve(newDirName);
+                newDirPath.toFile().mkdirs();
+                return CURRENT_DIR.relativize(newDirPath).toString();
+            }
+            return extractRelativePath(mavenProject.getParent());
+        }
+        return relativePath;
     }
 
     @Override
     public boolean isDirectSubModule() {
-        if (isExtensionDeploymentModule) {
+        if (extensionTestModule) {
             return true;
         }
         // integration tests - then we want to differ between integration test module
@@ -366,21 +379,16 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
 
     @Override
     public boolean containsTests() {
-        // ATM tests which are testing Quarkus application (not individual classes)
-        // are present in extension deployment modules and integration test modules
-        if (isExtensionDeploymentModule) {
-            Path sourceProjectSrcTestJavaPath = projectPath().resolve("src").resolve("test").resolve("java");
-            if (Files.exists(sourceProjectSrcTestJavaPath)) {
-                try(var pathStream = Files.walk(sourceProjectSrcTestJavaPath)) {
-                    return pathStream.anyMatch(p -> p.toString().endsWith(JAVA_FILE_EXTENSION));
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to detect whether '%s' extension module contains test "
-                            .formatted(sourceProjectSrcTestJavaPath), e);
-                }
+        Path sourceProjectSrcTestJavaPath = projectPath().resolve("src").resolve("test").resolve("java");
+        if (Files.exists(sourceProjectSrcTestJavaPath)) {
+            try(var pathStream = Files.walk(sourceProjectSrcTestJavaPath)) {
+                return pathStream.anyMatch(p -> p.toString().endsWith(JAVA_FILE_EXTENSION));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to detect whether '%s' extension module contains test "
+                        .formatted(sourceProjectSrcTestJavaPath), e);
             }
-            return false;
         }
-        return isIntegrationTestModule();
+        return false;
     }
 
     @Override
@@ -489,7 +497,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean isExt
                     boolean noExecutions = plugin.getExecutions() == null || plugin.getExecutions().isEmpty();
                     if (noDeps && noConfig && noExecutions) {
                         return true;
-                    } else if (isExtensionDeploymentModule) {
+                    } else if (extensionTestModule) {
                         if (plugin.getExecutions().size() == 1) {
                             var pluginExecution = plugin.getExecutions().get(0);
                             return "default-compile".equalsIgnoreCase(pluginExecution.getId());

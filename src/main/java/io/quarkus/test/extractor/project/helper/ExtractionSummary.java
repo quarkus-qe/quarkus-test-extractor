@@ -299,9 +299,7 @@ public record ExtractionSummary(String projectArtifactId,
             projectSpecificPlugins.putAll(summary.projectSpecificPlugins);
             projectSpecificDependencyManagements.addAll(summary.projectSpecificDependencyManagements);
         });
-        return new ExtractionSummary(projectArtifactId, Map.copyOf(unmanagedDependencies),
-                Map.copyOf(projectSpecificRepositories),
-                Map.copyOf(projectSpecificPluginRepositories), Map.copyOf(projectSpecificPlugins),
-                Set.copyOf(projectSpecificDependencyManagements));
+        return new ExtractionSummary(projectArtifactId, unmanagedDependencies, projectSpecificRepositories,
+                projectSpecificPluginRepositories, projectSpecificPlugins, projectSpecificDependencyManagements);
     }
 }
