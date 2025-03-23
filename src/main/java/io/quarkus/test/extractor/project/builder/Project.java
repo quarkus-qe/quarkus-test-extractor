@@ -45,6 +45,8 @@ public sealed interface Project permits ProjectImpl {
 
     boolean isDirectSubModule();
 
+    boolean isTestModule();
+
     boolean containsTests();
 
     /**

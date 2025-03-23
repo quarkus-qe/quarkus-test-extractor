@@ -94,6 +94,9 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 var preparedDependencies = new ArrayList<Dependency>();
                 dependencies.forEach(d -> {
                     var dependency = d.clone();
+                    if (hasThisProjectVersion(dependency)) {
+                        dependency.setVersion(null);
+                    }
                     if (!isDeploymentArtifact(dependency) && (dependency.getVersion() == null
                             || dependency.getVersion().isEmpty())) {
                         if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)
@@ -124,7 +127,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
 
     @Override
     public DependencyManagement dependencyManagement() {
-        if (!containsTests()) {
+        if (!isTestModule()) {
             // don't care, we are not going to use it anyway
             return mavenProject.getDependencyManagement();
         }
@@ -214,9 +217,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     }
                 }
                 if (hasThisProjectVersion(dependency)) {
-                    if (isManagedByQuarkusBom(dependency)) {
-                        dependency.setVersion(null);
-                    } else {
+                    dependency.setVersion(null);
+                    if (!isManagedByQuarkusBom(dependency)) {
                         setQuarkusPlatformVersion(dependency);
                     }
                 }
@@ -248,9 +250,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     }
                 }
                 if (hasThisProjectVersion(dependency)) {
-                    if (isManagedByQuarkusBom(dependency)) {
-                        dependency.setVersion(null);
-                    } else {
+                    dependency.setVersion(null);
+                    if (!isManagedByQuarkusBom(dependency)) {
                         setQuarkusPlatformVersion(dependency);
                     }
                 }
@@ -378,6 +379,14 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
     }
 
     @Override
+    public boolean isTestModule() {
+        // it is reasonable to say that integration test modules either contains tests or other modules needs them
+        if (extensionTestModule) {
+            return containsTests();
+        } else return isIntegrationTestModule();
+    }
+
+    @Override
     public boolean containsTests() {
         Path sourceProjectSrcTestJavaPath = projectPath().resolve("src").resolve("test").resolve("java");
         if (Files.exists(sourceProjectSrcTestJavaPath)) {
@@ -393,7 +402,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
 
     @Override
     public Properties properties() {
-        if (mavenProject.getProperties() != null && containsTests()) {
+        if (mavenProject.getProperties() != null && isTestModule()) {
             Properties testModuleProperties = new Properties();
             mavenProject.getProperties().forEach((k, v) -> {
                 String propertyName = (String) k;

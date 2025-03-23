@@ -37,7 +37,8 @@ public final class MavenUtils {
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
-    private static final String THIS_PROJECT_VERSION = "${project.version}";
+    // like in ${project.version}
+    private static final String THIS_PROJECT_VERSION = "project.version";
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise
@@ -67,9 +68,17 @@ public final class MavenUtils {
         // utils
     }
 
+    public static void writeParentMavenModel(Model model, Path targetDir) {
+        writeMavenModel(model, targetDir, true);
+    }
+
     public static void writeMavenModel(Model model, Path targetDir) {
+        writeMavenModel(model, targetDir, false);
+    }
+
+    private static void writeMavenModel(Model model, Path targetDir, boolean parentModule) {
         writeMavenModel(model, getPomFile(targetDir));
-        MavenUtils.replacePomPlaceholders(targetDir);
+        replacePomPlaceholders(targetDir, parentModule);
     }
 
     public static boolean isTestModuleProperty(String propertyName, String propertyValue) {
@@ -87,8 +96,8 @@ public final class MavenUtils {
         return getMavenModel(getResourceAsStream(resourceName));
     }
 
-    private static void replacePomPlaceholders(Path targetDir) {
-        replacePomPlaceholders(getPomFile(targetDir));
+    private static void replacePomPlaceholders(Path targetDir, boolean parentModule) {
+        replacePomPlaceholders(getPomFile(targetDir), parentModule);
     }
 
     private static Model getMavenModel(InputStream is) {
@@ -116,10 +125,15 @@ public final class MavenUtils {
         }
     }
 
-    private static void replacePomPlaceholders(File targetPom) {
+    private static void replacePomPlaceholders(File targetPom, boolean parentModule) {
         try {
             String pomContent = Files.readString(targetPom.toPath());
             pomContent = pomContent.replaceAll(MAVEN_PROPERTY_PREFIX, PROPERTY_START);
+            if (!parentModule) {
+                // this is "fallback" that exists mostly because plugin configurations doesn't have unified XML schema
+                // that we could use, so when there is "${project.version}", we didn't detect that before
+                pomContent = pomContent.replaceAll("project.version", "quarkus.platform.version");
+            }
             Files.writeString(targetPom.toPath(), pomContent, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             throw new RuntimeException("Failed to remove Maven property placeholder from POM file", e);
@@ -169,7 +183,7 @@ public final class MavenUtils {
     }
 
     public static boolean hasThisProjectVersion(Dependency dependency) {
-        return THIS_PROJECT_VERSION.equalsIgnoreCase(dependency.getVersion());
+        return dependency.getVersion() != null && dependency.getVersion().contains(THIS_PROJECT_VERSION);
     }
 
     public static boolean isPomPackageType(Dependency dep) {

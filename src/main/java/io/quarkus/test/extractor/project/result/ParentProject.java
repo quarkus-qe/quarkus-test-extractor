@@ -15,6 +15,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import static io.quarkus.test.extractor.project.utils.MavenUtils.hasJarPackaging;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.writeParentMavenModel;
 
 public final class ParentProject {
 
@@ -67,7 +68,7 @@ public final class ParentProject {
     }
 
     public static void writeTo(Path targetDir) {
-       MavenUtils.writeMavenModel(MAVEN_MODEL, targetDir);
+       writeParentMavenModel(MAVEN_MODEL, targetDir);
     }
 
     public static void setQuarkusVersion(String version) {

@@ -19,6 +19,9 @@
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>
+        <os.detected.name>linux</os.detected.name>
+        <os.detected.arch>x86_64</os.detected.arch>
+        <os.detected.classifier>$USE-EXTRACTED-PROPERTIES{os.detected.name}-$USE-EXTRACTED-PROPERTIES{os.detected.arch}</os.detected.classifier>
     </properties>
 
     <dependencyManagement>

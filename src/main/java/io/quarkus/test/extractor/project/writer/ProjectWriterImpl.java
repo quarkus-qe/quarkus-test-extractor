@@ -50,7 +50,7 @@ final class ProjectWriterImpl implements ProjectWriter {
             collectPluginVersions(project);
         } else if (copyAsIs(project)) {
             copyWholeProject(project);
-        } else if (project.containsTests()) {
+        } else if (project.isTestModule()) {
             createTestModuleFrom(project);
         }
 
@@ -123,7 +123,7 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void addToParentPomModel(Project project) {
-        if (project.isDirectSubModule() && project.containsTests()) {
+        if (project.isDirectSubModule() && project.isTestModule()) {
             ParentProject.addTestModule(project.targetRelativePath(), project.targetProfileName());
         }
     }
