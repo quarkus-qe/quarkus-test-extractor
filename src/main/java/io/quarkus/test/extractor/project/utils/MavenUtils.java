@@ -17,7 +17,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public final class MavenUtils {
@@ -133,15 +135,44 @@ public final class MavenUtils {
         try {
             String pomContent = Files.readString(targetPom.toPath());
             pomContent = pomContent.replaceAll(MAVEN_PROPERTY_PREFIX, PROPERTY_START);
-            if (!parentModule) {
+            if (!parentModule && pomContent.contains(THIS_PROJECT_VERSION)) {
                 // this is "fallback" that exists mostly because plugin configurations doesn't have unified XML schema
                 // that we could use, so when there is "${project.version}", we didn't detect that before
-                pomContent = pomContent.replaceAll("project.version", "quarkus.platform.version");
+                StringBuilder newPomContent = new StringBuilder();
+                AtomicReference<String> previousLine = new AtomicReference<>("");
+                pomContent.lines().forEachOrdered(line -> {
+                    final String thisLine;
+                    if (isManagedByTestParent(toDependency(previousLine.get()))) {
+                        // basically, if we manage this dependency, we want it to have our project version
+                        thisLine = line;
+                    } else {
+                        thisLine = line.replaceAll(THIS_PROJECT_VERSION, "quarkus.platform.version");
+                    }
+                    previousLine.set(thisLine);
+                    newPomContent.append(thisLine).append(System.lineSeparator());
+                });
+                pomContent = newPomContent.toString();
             }
             Files.writeString(targetPom.toPath(), pomContent, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             throw new RuntimeException("Failed to remove Maven property placeholder from POM file", e);
         }
+    }
+
+    private static Dependency toDependency(String line) {
+        if (line == null || !line.contains("<artifactId>")) {
+            return null;
+        }
+        line = line.trim();
+        String restOfArtifactId = line.substring("<artifactId>".length());
+        String artifactId = restOfArtifactId.substring(0, restOfArtifactId.indexOf("<"));
+        var dep = new Dependency();
+        dep.setArtifactId(artifactId);
+        return dep;
+    }
+
+    public static String getThisProjectVersion() {
+        return "$USE-EXTRACTED-PROPERTIES{" + THIS_PROJECT_VERSION + "}";
     }
 
     public static String getManagementKey(Dependency dependency) {

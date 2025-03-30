@@ -70,6 +70,9 @@
                     <value>true</value>
                 </property>
             </activation>
+            <properties>
+                <integration-tests-build>true</integration-tests-build>
+            </properties>
             <modules>
                 <!-- to be generated -->
             </modules>
@@ -94,9 +97,22 @@
                     <value>true</value>
                 </property>
             </activation>
+            <properties>
+                <integration-tests-build>true</integration-tests-build>
+            </properties>
             <modules>
                 <!-- to be generated -->
             </modules>
+        </profile>
+        <profile>
+            <id>integration-tests-build</id>
+            <activation>
+                <property>
+                    <name>integration-tests-build</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <!-- to be generated -->
         </profile>
         <profile>
             <id>native</id>

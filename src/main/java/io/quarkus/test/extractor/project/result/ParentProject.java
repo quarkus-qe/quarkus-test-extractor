@@ -52,8 +52,9 @@ public final class ParentProject {
     }
 
     public static void correctGroupIdIfNecessary(Dependency dependency) {
-        if (copyAsIsContainsArtifactId(dependency)) {
+        if (isManagedByTestParent(dependency)) {
             dependency.setGroupId(TEST_PARENT_GROUP_ID);
+            dependency.setVersion(getThisProjectVersion());
         }
     }
 
@@ -62,8 +63,12 @@ public final class ParentProject {
     }
 
     public static boolean isManagedByTestParent(Dependency dependency) {
+        if (dependency == null) {
+            return false;
+        }
         return copyAsIsContainsArtifactId(dependency)
-        || MAVEN_MODEL.getDependencyManagement().getDependencies().stream()
+                || dependency.getArtifactId().startsWith("quarkus-integration-test")
+                || MAVEN_MODEL.getDependencyManagement().getDependencies().stream()
                 .anyMatch(d -> dependency.getArtifactId().equalsIgnoreCase(d.getArtifactId()));
     }
 
@@ -129,13 +134,9 @@ public final class ParentProject {
 
     public static void addManagedProject(Project project) {
         var managedDependency = new Dependency();
-        if (COPY_AS_IS_ARTIFACT_IDS.contains(project.artifactId())) {
-            managedDependency.setGroupId(TEST_PARENT_GROUP_ID);
-        } else {
-            managedDependency.setGroupId("io.quarkus");
-        }
         managedDependency.setVersion("$USE-EXTRACTED-PROPERTIES{project.version}");
         managedDependency.setArtifactId(project.artifactId());
+        managedDependency.setGroupId(TEST_PARENT_GROUP_ID);
         MAVEN_MODEL.getDependencyManagement().addDependency(managedDependency);
         if (project.isIntegrationTestModule()) {
             if (project.isDirectSubModule()) {
@@ -154,5 +155,11 @@ public final class ParentProject {
                 .stream()
                 .filter(p -> x.equalsIgnoreCase(p.getId()))
                 .findFirst();
+    }
+
+    public static void configureIntegrationTestsBuild(Project project) {
+        var build = project.originalModel().getBuild();
+        var integrationTestsBuildProfile = getProfile("integration-tests-build").orElseThrow();
+        integrationTestsBuildProfile.setBuild(build);
     }
 }

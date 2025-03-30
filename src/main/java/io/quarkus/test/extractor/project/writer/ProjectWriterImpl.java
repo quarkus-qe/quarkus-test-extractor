@@ -5,7 +5,6 @@ import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
-import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 
@@ -16,6 +15,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
+import static io.quarkus.test.extractor.project.result.ParentProject.configureIntegrationTestsBuild;
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
@@ -44,6 +44,10 @@ final class ProjectWriterImpl implements ProjectWriter {
 
         if (isQuarkusBuildParent(project)) {
             copyQuarkusBuildParentToOurParentProject(project);
+        } else if (isIntegrationTestsParent(project)) {
+            configureIntegrationTestsBuild(project);
+        } else if (isNotSupportedProject(project)) {
+            // TODO: start supporting ^^ projects
         } else if (isQuarkusParentPomProject(project)) {
             collectPluginVersions(project);
         } else if (copyAsIs(project)) {
@@ -58,6 +62,16 @@ final class ProjectWriterImpl implements ProjectWriter {
         } else {
             extractionSummary.createAndStorePartialSummary();
         }
+    }
+
+    private boolean isNotSupportedProject(Project project) {
+        // following projects need more investigations before we start support them
+        return project.targetRelativePath().contains("integration-tests/test-extension")
+                || project.targetRelativePath().contains("integration-tests/grpc-external-proto-test");
+    }
+
+    private static boolean isIntegrationTestsParent(Project project) {
+        return project.artifactId().equalsIgnoreCase("quarkus-integration-tests-parent");
     }
 
     private static void copyWholeProject(Project project) {
