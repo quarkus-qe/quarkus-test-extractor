@@ -3,6 +3,7 @@ package io.quarkus.test.extractor.project.builder;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
+import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
 import org.apache.maven.model.Build;
@@ -30,8 +31,7 @@ import java.util.regex.Pattern;
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
 import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQuarkusBom;
 import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
-import static io.quarkus.test.extractor.project.result.ParentProject.getPluginVersionInParentProps;
-import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
+import static io.quarkus.test.extractor.project.result.ParentProject.*;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.ANY;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
@@ -103,6 +103,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                             resolveAndSetDependencyVersion(dependency);
                         }
                     }
+                    correctGroupIdIfNecessary(dependency);
                     preparedDependencies.add(dependency);
                 });
                 profile.setDependencies(preparedDependencies);
@@ -146,6 +147,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 .filter(d -> !d.getArtifactId().equalsIgnoreCase("quarkus-bom-test"))
                 .toList();
         if (!managedDependencies.isEmpty()) {
+            managedDependencies.forEach(ParentProject::correctGroupIdIfNecessary);
             // really?? that is suspicious, let's add it to summary so that someone can inspect this fact manually
             extractionSummary.addProjectWithDependencyManagement(dependencyManagement, project);
             return dependencyManagement.clone();
@@ -260,6 +262,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 result.add(dependency);
             });
         }
+        result.forEach(ParentProject::correctGroupIdIfNecessary);
         return List.copyOf(result);
     }
 

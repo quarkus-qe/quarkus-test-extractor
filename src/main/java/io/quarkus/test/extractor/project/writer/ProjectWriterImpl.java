@@ -63,8 +63,8 @@ final class ProjectWriterImpl implements ProjectWriter {
     private static void copyWholeProject(Project project) {
         copyAllFilesInProjectExceptForPom(project);
         Model model = project.originalModel();
-        model.setGroupId(TEST_PARENT_GROUP_ID);
         Parent parent = model.getParent();
+        parent.setGroupId(TEST_PARENT_GROUP_ID);
         if (project.isDirectSubModule()) {
             parent.setArtifactId("quarkus-main-tests");
             parent.setVersion(project.version());

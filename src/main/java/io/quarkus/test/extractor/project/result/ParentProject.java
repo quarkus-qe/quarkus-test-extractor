@@ -14,8 +14,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
-import static io.quarkus.test.extractor.project.utils.MavenUtils.hasJarPackaging;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.writeParentMavenModel;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 
 public final class ParentProject {
 
@@ -52,14 +51,24 @@ public final class ParentProject {
         PLUGIN_ARTIFACT_ID_TO_VERSION_PROP = Map.copyOf(plugins);
     }
 
+    public static void correctGroupIdIfNecessary(Dependency dependency) {
+        if (copyAsIsContainsArtifactId(dependency)) {
+            dependency.setGroupId(TEST_PARENT_GROUP_ID);
+        }
+    }
+
     public static void addTestModule(String testModuleName, String profile) {
         findProfileByName(profile).addModule(testModuleName);
     }
 
     public static boolean isManagedByTestParent(Dependency dependency) {
-        return COPY_AS_IS_ARTIFACT_IDS.contains(dependency.getArtifactId())
+        return copyAsIsContainsArtifactId(dependency)
         || MAVEN_MODEL.getDependencyManagement().getDependencies().stream()
                 .anyMatch(d -> dependency.getArtifactId().equalsIgnoreCase(d.getArtifactId()));
+    }
+
+    private static boolean copyAsIsContainsArtifactId(Dependency dependency) {
+        return COPY_AS_IS_ARTIFACT_IDS.contains(dependency.getArtifactId());
     }
 
     public static boolean copyAsIs(Project project) {
@@ -120,7 +129,11 @@ public final class ParentProject {
 
     public static void addManagedProject(Project project) {
         var managedDependency = new Dependency();
-        managedDependency.setGroupId("io.quarkus");
+        if (COPY_AS_IS_ARTIFACT_IDS.contains(project.artifactId())) {
+            managedDependency.setGroupId(TEST_PARENT_GROUP_ID);
+        } else {
+            managedDependency.setGroupId("io.quarkus");
+        }
         managedDependency.setVersion("$USE-EXTRACTED-PROPERTIES{project.version}");
         managedDependency.setArtifactId(project.artifactId());
         MAVEN_MODEL.getDependencyManagement().addDependency(managedDependency);
