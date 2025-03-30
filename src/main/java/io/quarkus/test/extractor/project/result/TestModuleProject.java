@@ -4,6 +4,7 @@ import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 
+import static io.quarkus.test.extractor.project.utils.MavenUtils.TEST_PARENT_GROUP_ID;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
 
 public final class TestModuleProject {
@@ -19,6 +20,7 @@ public final class TestModuleProject {
         } else {
             model.setParent(project.originalModel().getParent());
         }
+        model.getParent().setGroupId(TEST_PARENT_GROUP_ID);
         model.setArtifactId(project.artifactId());
         model.setName(project.name());
         model.setProperties(project.properties());

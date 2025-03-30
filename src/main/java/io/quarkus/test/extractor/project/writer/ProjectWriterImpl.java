@@ -5,6 +5,7 @@ import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 
@@ -16,10 +17,7 @@ import java.util.Objects;
 
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.POM_XML;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.computeRelativePath;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.copyDirectory;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.writeMavenModel;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.TARGET_DIR;
@@ -65,9 +63,9 @@ final class ProjectWriterImpl implements ProjectWriter {
     private static void copyWholeProject(Project project) {
         copyAllFilesInProjectExceptForPom(project);
         Model model = project.originalModel();
+        model.setGroupId(TEST_PARENT_GROUP_ID);
+        Parent parent = model.getParent();
         if (project.isDirectSubModule()) {
-            Parent parent = model.getParent();
-            parent.setGroupId("io.quarkus");
             parent.setArtifactId("quarkus-main-tests");
             parent.setVersion(project.version());
             parent.setRelativePath(computeRelativePath(project));

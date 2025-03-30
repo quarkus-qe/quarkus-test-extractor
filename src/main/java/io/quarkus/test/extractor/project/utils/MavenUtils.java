@@ -22,6 +22,10 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public final class MavenUtils {
 
+    /**
+     * Group id must not be io.quarkus as we need to keep modules artifact ids different from RHBQ bits we test.
+     */
+    public static final String TEST_PARENT_GROUP_ID = "io.quarkus.qe.tests";
     public static final String POM = "pom";
     public static final String POM_XML = "pom.xml";
     public static final String TEST_SCOPE = "test";

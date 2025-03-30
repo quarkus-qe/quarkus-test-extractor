@@ -54,7 +54,6 @@ import static io.quarkus.test.extractor.project.utils.PluginUtils.isDeploymentAr
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionTestModule;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionsSupplementaryModule;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.prefixWithTests;
 
 record ProjectImpl(MavenProject mavenProject, String relativePath, boolean extensionTestModule,
                    ExtractionSummary extractionSummary, String originalProjectName) implements Project {
@@ -142,7 +141,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             return null;
         }
         List<Dependency> managedDependencies = dependencyManagement.getDependencies().stream()
-                .filter(QuarkusBuildParent::isNotManagedByBuildParent).toList();
+                .filter(QuarkusBuildParent::isNotManagedByBuildParent)
+                // we don't need Quarkus BOM test parent, and it doesn't exist as we don't build it or keep it
+                .filter(d -> !d.getArtifactId().equalsIgnoreCase("quarkus-bom-test"))
+                .toList();
         if (!managedDependencies.isEmpty()) {
             // really?? that is suspicious, let's add it to summary so that someone can inspect this fact manually
             extractionSummary.addProjectWithDependencyManagement(dependencyManagement, project);
@@ -343,9 +345,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
 
     @Override
     public String artifactId() {
-        if (extensionTestModule && !isExtensionsSupplementaryModule(relativePath)) {
-            return prefixWithTests(dropDeploymentPostfix(mavenProject.getArtifactId()));
-        }
+        // so that we don't make ourselves problems, the project name must stay same
+        // one example: FlywayDevModeCreateFromHibernateTest in the flyway extension deployment module
+        // expected V1.0.0__quarkus-flyway-deployment.sql file to exist, because Flyway extension creates
+        // a migration file name like this: "V1.0.0__" + artifactId + ".sql"
         return mavenProject.getArtifactId();
     }
 
@@ -353,19 +356,27 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
     public String targetRelativePath() {
         // extensions/vertx-http/deployment -> extensions/vertx-http
         if (extensionTestModule) {
-            if (isExtensionsSupplementaryModule(relativePath)) {
-                // extensions/arc/test-supplement -> extensions/arc-test-supplement
-                Path mavenProjectPath = mavenProject.getBasedir().toPath().toAbsolutePath();
-                var parent = mavenProjectPath.getParent();
-                var parentsParent = parent.getParent();
-                var newDirName = parent.getFileName() + "-" + mavenProjectPath.getFileName();
-                var newDirPath = parentsParent.resolve(newDirName);
-                newDirPath.toFile().mkdirs();
-                return CURRENT_DIR.relativize(newDirPath).toString();
-            }
-            return extractRelativePath(mavenProject.getParent());
+            var extensionParentProject = findExtensionParent(mavenProject);
+            Path mavenProjectPath = mavenProject.getBasedir().toPath().toAbsolutePath();
+            var parent = mavenProjectPath.getParent();
+            var newDirName = parent.getFileName() + "-" + mavenProjectPath.getFileName();
+            var newDirPath = extensionParentProject.getBasedir().toPath().toAbsolutePath().resolve(newDirName);
+            return CURRENT_DIR.relativize(newDirPath).toString();
         }
         return relativePath;
+    }
+
+    private static MavenProject findExtensionParent(MavenProject mavenProject) {
+        var project = mavenProject;
+        while (project.getParent() != null) {
+            project = project.getParent();
+            if ("quarkus-extensions-parent".equalsIgnoreCase(project.getArtifactId())) {
+                return project;
+            }
+        }
+        throw new IllegalStateException("Project with artifact id 'quarkus-extensions-parent' not found is not"
+                + " a parent module of project " + mavenProject.getName() + " with path "
+                + mavenProject.getBasedir().toPath().toAbsolutePath());
     }
 
     @Override
