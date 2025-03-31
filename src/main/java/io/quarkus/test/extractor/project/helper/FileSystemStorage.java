@@ -30,5 +30,20 @@ final class FileSystemStorage {
             throw new RuntimeException("Failed to save content to " + fileName, e);
         }
     }
+    static void addToFile(String fileName, String content) {
+        Path filePath = TARGET_DIR.resolve(fileName);
+        if (!Files.exists(filePath)) {
+            try {
+                filePath.toFile().createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create file " + fileName, e);
+            }
+        }
+        try {
+            Files.writeString(filePath, content + System.lineSeparator(), StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to append content to file " + fileName, e);
+        }
+    }
 
 }

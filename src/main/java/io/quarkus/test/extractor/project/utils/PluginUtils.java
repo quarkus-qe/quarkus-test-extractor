@@ -53,7 +53,10 @@ public final class PluginUtils {
     }
 
     public static boolean isDeploymentArtifact(Dependency dependency) {
-        String artifactId = dependency.getArtifactId();
+        return isDeploymentArtifact(dependency.getArtifactId());
+    }
+
+    public static boolean isDeploymentArtifact(String artifactId) {
         return artifactId != null && artifactId.endsWith(DEPLOYMENT_POSTFIX);
     }
 

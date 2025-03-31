@@ -148,6 +148,9 @@ fi
 echo 'Collecting metadata about Quarkus BOM'
 mvn -f bom/application/ io.quarkus.qe:quarkus-test-extractor:1.0-SNAPSHOT:parse-quarkus-bom -Dwrite-to=$TARGET_DIR $ADDITIONAL_ARGS >> test-extraction-log
 
+# collect metadata about Quarkus core extensions
+mvn io.quarkus.qe:quarkus-test-extractor:1.0-SNAPSHOT:collect-core-extensions -Dwrite-to=$TARGET_DIR $ADDITIONAL_ARGS >> test-extraction-log
+
 # extract tests
 echo 'Extracting tests from Quarkus ' $QUARKUS_GIT_HEAD ', you will be informed about the extraction result'
 mvn io.quarkus.qe:quarkus-test-extractor:1.0-SNAPSHOT:extract-tests -Dwrite-to=$TARGET_DIR $ADDITIONAL_ARGS >> test-extraction-log

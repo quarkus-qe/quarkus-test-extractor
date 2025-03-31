@@ -1,5 +1,6 @@
 package io.quarkus.test.extractor.project.builder;
 
+import io.quarkus.test.extractor.project.helper.CoreExtensions;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
 import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
@@ -27,6 +28,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
 import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQuarkusBom;
@@ -192,7 +194,6 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             var self = new Dependency();
             self.setGroupId(mavenProject.getGroupId());
             self.setArtifactId(mavenProject.getArtifactId());
-            self.setScope(TEST_SCOPE);
             if (!isManagedByQuarkusBom(self)) {
                 // ATM at the very least 'quarkus-observability-devservices-deployment' is not managed in '-deployment'
                 // module, and it doesn't seem to be an issue, so not a bug
@@ -201,9 +202,6 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             result.add(self);
             mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
                 var dependency = dep.clone();
-                if (!MavenUtils.hasTestScope(dependency)) {
-                    dependency.setScope(TEST_SCOPE);
-                }
                 // some test scope dependencies probably are not managed by Quarkus BOM
                 // but are managed due to Quarkus Build Parent dependency management
                 // however we only use delivered artifacts and use Quarkus platform BOM
@@ -226,8 +224,34 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         setQuarkusPlatformVersion(dependency);
                     }
                 }
+
                 result.add(dependency);
             });
+            result.forEach(ParentProject::correctGroupIdIfNecessary);
+            // each '-deployment' artifact without test scope requires runtime counterpart
+            var runtimeCounterparts = result.stream()
+                    .filter(d -> !hasTestScope(d))
+                    .filter(PluginUtils::isDeploymentArtifact)
+                    .filter(d2 -> !MavenUtils.isTestJar(d2))
+                    .filter(d2 -> !MavenUtils.isPomPackageType(d2))
+                    .filter(d -> !d.getArtifactId().contains("-spi"))
+                    // exception, this doesn't have nor need runtime counterpart
+                    .filter(d -> !d.getArtifactId().equals("quarkus-devservices-deployment"))
+                    .map(d -> {
+                        Dependency runtimeDependency = d.clone();
+                        runtimeDependency.setArtifactId(dropDeploymentPostfix(runtimeDependency.getArtifactId()));
+                        return runtimeDependency;
+                    })
+                    .filter(d -> CoreExtensions.isCoreExtension(d.getArtifactId()))
+                    .filter(d -> {
+                        String runtimeArtifactId = d.getArtifactId();
+                        return result.stream()
+                                .filter(d2 -> !MavenUtils.isTestJar(d2))
+                                .filter(d2 -> !MavenUtils.isPomPackageType(d2))
+                                .noneMatch(d2 -> d2.getArtifactId().equalsIgnoreCase(runtimeArtifactId));
+                    })
+                    .collect(Collectors.toSet());
+            result.addAll(runtimeCounterparts);
         } else {
             // IT modules may contain even POM type dependencies without exclusions or a test scope
             // in some cases they are not resolvable, like 'io.quarkus.gradle.plugin' in the
@@ -261,8 +285,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 }
                 result.add(dependency);
             });
+            result.forEach(ParentProject::correctGroupIdIfNecessary);
         }
-        result.forEach(ParentProject::correctGroupIdIfNecessary);
         return List.copyOf(result);
     }
 
