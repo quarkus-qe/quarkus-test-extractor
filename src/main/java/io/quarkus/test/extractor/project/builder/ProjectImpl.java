@@ -110,6 +110,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 });
                 profile.setDependencies(preparedDependencies);
             }
+            profile.setProperties(getProperties(profile.getProperties(), isTestModule()));
             profiles.add(profile);
         });
         return List.copyOf(profiles);
@@ -440,26 +441,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
 
     @Override
     public Properties properties() {
-        if (mavenProject.getProperties() != null && isTestModule()) {
-            Properties testModuleProperties = new Properties();
-            mavenProject.getProperties().forEach((k, v) -> {
-                String propertyName = (String) k;
-                String propertyValue = (String) v;
-                if (isTestModuleProperty(propertyName, propertyValue)) {
-                    testModuleProperties.put(propertyName, propertyValue);
-                }
-            });
-
-            return testModuleProperties;
-        }
-
-        // effective properties, we don't need to repeat them everywhere
-        // so this is mainly for copying them once to the project parent
-        final Properties properties = new Properties();
-        if (mavenProject.getProperties() != null) {
-            properties.putAll(mavenProject.getProperties());
-        }
-        return properties;
+        final Properties mavenProjectProperties = mavenProject.getProperties();
+        return getProperties(mavenProjectProperties, isTestModule());
     }
 
     @Override
@@ -611,5 +594,28 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
         // it is possible that some plugins only present in profiles will not appear in the build plugins, and we just
         // need to walk through profile plugins
         throw new IllegalStateException("Failed to determine plugin '%s' version".formatted(plugin.getArtifactId()));
+    }
+
+    private static Properties getProperties(Properties mavenProjectProperties, boolean isTestModule) {
+        if (mavenProjectProperties != null && isTestModule) {
+            Properties testModuleProperties = new Properties();
+            mavenProjectProperties.forEach((k, v) -> {
+                String propertyName = (String) k;
+                String propertyValue = (String) v;
+                if (isTestModuleProperty(propertyName, propertyValue)) {
+                    testModuleProperties.put(propertyName, propertyValue);
+                }
+            });
+
+            return testModuleProperties;
+        }
+
+        // effective properties, we don't need to repeat them everywhere
+        // so this is mainly for copying them once to the project parent
+        final Properties properties = new Properties();
+        if (mavenProjectProperties != null) {
+            properties.putAll(mavenProjectProperties);
+        }
+        return properties;
     }
 }
