@@ -140,7 +140,7 @@ public final class ParentProject {
         MAVEN_MODEL.getDependencyManagement().addDependency(managedDependency);
         if (project.isIntegrationTestModule()) {
             if (project.isDirectSubModule()) {
-                getProfile("integration-tests-managed-modules")
+                getProfile("integration-tests-managed-modules" + getProfilePostfix(project))
                         .ifPresent(profile -> profile.addModule(project.targetRelativePath()));
             }
         } else {

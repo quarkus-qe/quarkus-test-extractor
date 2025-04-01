@@ -34,24 +34,10 @@ import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDepe
 import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQuarkusBom;
 import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
 import static io.quarkus.test.extractor.project.result.ParentProject.*;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.ANY;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_COMMUNITY_VERSION;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.TEST_SCOPE;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.getManagementKey;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.hasTestScope;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.hasThisProjectVersion;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotCentralRepository;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.isNotSurefireOrFailsafePlugin;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.isPomPackageType;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestJar;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.setQuarkusCommunityVersion;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.setQuarkusPlatformVersion;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.dropDeploymentPostfix;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.COMPILE_SCOPE;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.isTestModuleProperty;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isDeploymentArtifact;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionTestModule;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionsSupplementaryModule;
@@ -447,7 +433,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
 
     @Override
     public String targetProfileName() {
-        return relativePath().startsWith(EXTENSIONS) ? EXTENSIONS : INTEGRATION_TESTS;
+        return relativePath().startsWith(EXTENSIONS) ? EXTENSIONS : INTEGRATION_TESTS + getProfilePostfix(this);
     }
 
     @Override

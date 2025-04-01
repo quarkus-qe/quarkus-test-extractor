@@ -67,6 +67,23 @@ public final class MavenUtils {
         properties.add("os.detected.release");
         properties.add("os.detected.release.version");
         properties.add("os.detected.release.like.fedora");
+        properties.add("jdk.min.version");
+        properties.add("minimum-java-version");
+        properties.add("native.surefire.skip");
+        properties.add("impsort.skip");
+        properties.add("gpg.skip");
+        properties.add("maven.deploy.skip");
+        properties.add("maven.compiler.argument.testTarget");
+        properties.add("maven.compiler.release");
+        properties.add("maven.compiler.source");
+        properties.add("maven.compiler.testSource");
+        properties.add("maven.compiler.argument.target");
+        properties.add("maven.compiler.target");
+        properties.add("maven.compiler.argument.testSource");
+        properties.add("maven.compiler.argument.source");
+        properties.add("failsafe.argLine.additional");
+        properties.add("develocity.pts.active");
+        properties.add("revapi.newVersion");
         IGNORED_PROPERTIES = Set.copyOf(properties);
     }
 
@@ -263,5 +280,10 @@ public final class MavenUtils {
             }
 
         }
+    }
+
+    public static String getProfilePostfix(Project project) {
+        // VT only tests should only run with Java 21
+        return project.targetRelativePath().contains("integration-tests/virtual-threads") ? "-21" : "";
     }
 }

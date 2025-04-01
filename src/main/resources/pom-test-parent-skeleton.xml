@@ -24,6 +24,10 @@
         <os.detected.name>linux</os.detected.name>
         <os.detected.arch>x86_64</os.detected.arch>
         <os.detected.classifier>$USE-EXTRACTED-PROPERTIES{os.detected.name}-$USE-EXTRACTED-PROPERTIES{os.detected.arch}</os.detected.classifier>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencyManagement>
@@ -80,6 +84,22 @@
             </modules>
         </profile>
         <profile>
+            <id>integration-tests-21</id>
+            <activation>
+                <property>
+                    <name>integration-tests</name>
+                    <value>true</value>
+                </property>
+                <jdk>[21,)</jdk>
+            </activation>
+            <properties>
+                <integration-tests-build>true</integration-tests-build>
+            </properties>
+            <modules>
+                <!-- to be generated -->
+            </modules>
+        </profile>
+        <profile>
             <id>extension-tests-managed-modules</id>
             <activation>
                 <property>
@@ -98,6 +118,22 @@
                     <name>integration-tests-managed-modules</name>
                     <value>true</value>
                 </property>
+            </activation>
+            <properties>
+                <integration-tests-build>true</integration-tests-build>
+            </properties>
+            <modules>
+                <!-- to be generated -->
+            </modules>
+        </profile>
+        <profile>
+            <id>integration-tests-managed-modules-21</id>
+            <activation>
+                <property>
+                    <name>integration-tests-managed-modules</name>
+                    <value>true</value>
+                </property>
+                <jdk>[21,)</jdk>
             </activation>
             <properties>
                 <integration-tests-build>true</integration-tests-build>
