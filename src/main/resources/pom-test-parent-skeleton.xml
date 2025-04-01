@@ -13,9 +13,11 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>{{quarkus-project-version}}</quarkus.platform.version>
         <!-- community dependencies exist because some artifacts won't exist with the product version -->
-        <quarkus.community.group-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</quarkus.community.group-id>
-        <quarkus.community.artifact-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.artifact-id}</quarkus.community.artifact-id>
-        <quarkus.community.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</quarkus.community.version>
+        <!-- this can't be quarkus.community... because Quarkus reports it as unrecognized properties -->
+        <!-- which fails test that expect all the props to be recognized -->
+        <community.quarkus.group-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</community.quarkus.group-id>
+        <community.quarkus.artifact-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.artifact-id}</community.quarkus.artifact-id>
+        <community.quarkus.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</community.quarkus.version>
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>
