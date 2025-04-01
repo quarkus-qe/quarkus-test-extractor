@@ -94,6 +94,7 @@
             </activation>
             <properties>
                 <integration-tests-build>true</integration-tests-build>
+                <maven.compiler.release>21</maven.compiler.release>
             </properties>
             <modules>
                 <!-- to be generated -->
@@ -137,6 +138,7 @@
             </activation>
             <properties>
                 <integration-tests-build>true</integration-tests-build>
+                <maven.compiler.release>21</maven.compiler.release>
             </properties>
             <modules>
                 <!-- to be generated -->
