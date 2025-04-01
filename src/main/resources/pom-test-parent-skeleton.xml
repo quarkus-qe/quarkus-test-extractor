@@ -144,6 +144,10 @@
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>$USE-EXTRACTED-PROPERTIES{maven.home}</maven.home>
+                        <!-- hack to fix some QuarkusProdModeTest in OpenShift deployment module -->
+                        <!-- because when creating temp directory in Quarkus main project it creates temp dir in target -->
+                        <!-- but without this, our tests create temp dir in /tmp; you can drop next line if it starts passing -->
+                        <project.build.directory>$USE-EXTRACTED-PROPERTIES{project.basedir}/target</project.build.directory>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
