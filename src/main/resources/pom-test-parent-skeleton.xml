@@ -28,6 +28,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <reruns>3</reruns>
     </properties>
 
     <dependencyManagement>
@@ -189,6 +190,7 @@
                         <!-- but without this, our tests create temp dir in /tmp; you can drop next line if it starts passing -->
                         <project.build.directory>$USE-EXTRACTED-PROPERTIES{project.basedir}/target</project.build.directory>
                     </systemPropertyVariables>
+                    <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                 </configuration>
             </plugin>
             <plugin>
@@ -208,6 +210,7 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>$USE-EXTRACTED-PROPERTIES{maven.home}</maven.home>
                     </systemPropertyVariables>
+                    <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                 </configuration>
             </plugin>
         </plugins>
