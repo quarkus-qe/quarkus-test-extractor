@@ -33,7 +33,7 @@ public final class MavenUtils {
     public static final String TEST_SCOPE = "test";
     public static final String COMPILE_SCOPE = "compile";
     public static final String QUARKUS_PLATFORM_VERSION = "${quarkus.platform.version}";
-    public static final String QUARKUS_COMMUNITY_VERSION = "${quarkus.community.version}";
+    public static final String QUARKUS_COMMUNITY_VERSION = "${community.quarkus.version}";
     public static final String USE_EXTRACTED_PROPERTIES = "USE-EXTRACTED-PROPERTIES";
     public static final String ANY = "*";
     public static final String JAR = "jar";
@@ -196,7 +196,7 @@ public final class MavenUtils {
     }
 
     public static void setQuarkusCommunityVersion(Dependency dependency) {
-        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.community.version}");
+        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{community.quarkus.version}");
     }
 
     public static String computeRelativePath(Project project) {
