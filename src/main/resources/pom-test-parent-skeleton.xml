@@ -190,6 +190,9 @@
                         <!-- because when creating temp directory in Quarkus main project it creates temp dir in target -->
                         <!-- but without this, our tests create temp dir in /tmp; you can drop next line if it starts passing -->
                         <project.build.directory>$USE-EXTRACTED-PROPERTIES{project.basedir}/target</project.build.directory>
+                        <!-- this is intended mainly for devtools IT module that parse BOM version and group id from these props -->
+                        <project.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</project.version>
+                        <project.groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</project.groupId>
                     </systemPropertyVariables>
                     <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                 </configuration>
@@ -210,6 +213,8 @@
                         <native.image.path>$USE-EXTRACTED-PROPERTIES{project.build.directory}/$USE-EXTRACTED-PROPERTIES{project.build.finalName}-runner</native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>$USE-EXTRACTED-PROPERTIES{maven.home}</maven.home>
+                        <project.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</project.version>
+                        <project.groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</project.groupId>
                     </systemPropertyVariables>
                     <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                 </configuration>
