@@ -220,10 +220,19 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>$USE-EXTRACTED-PROPERTIES{version.surefire.plugin}</version>
+                    <configuration>
+                        <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+                        <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
+                        <!-- the add-opens is here to allow to clear the propertiesCache in com.sun.naming.internal.ResourceManager -->
+                        <argLine>-Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="$USE-EXTRACTED-PROPERTIES{project.build.directory}" $USE-EXTRACTED-PROPERTIES{surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED</argLine>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>$USE-EXTRACTED-PROPERTIES{version.failsafe.plugin}</version>
+                    <configuration>
+                        <argLine>-Djava.io.tmpdir="$USE-EXTRACTED-PROPERTIES{project.build.directory}" $USE-EXTRACTED-PROPERTIES{failsafe.argLine.additional}</argLine>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
