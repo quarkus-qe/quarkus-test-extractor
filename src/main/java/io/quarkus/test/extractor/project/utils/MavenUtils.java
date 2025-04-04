@@ -81,6 +81,7 @@ public final class MavenUtils {
         properties.add("maven.compiler.target");
         properties.add("maven.compiler.argument.testSource");
         properties.add("maven.compiler.argument.source");
+        properties.add("maven.compiler.testTarget");
         properties.add("failsafe.argLine.additional");
         properties.add("develocity.pts.active");
         properties.add("revapi.newVersion");
