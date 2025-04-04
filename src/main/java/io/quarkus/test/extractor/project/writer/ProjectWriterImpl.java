@@ -3,6 +3,7 @@ package io.quarkus.test.extractor.project.writer;
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.helper.ExtractionSummary;
 import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
+import io.quarkus.test.extractor.project.helper.TestProjectCustomizer;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
 import org.apache.maven.model.Model;
@@ -103,6 +104,7 @@ final class ProjectWriterImpl implements ProjectWriter {
             copyTests(project);
         }
         Model testModel = TestModuleProject.create(project);
+        TestProjectCustomizer.customizeIfNecessary(project, testModel);
         Path testModelTargetPath = getTargetProjectDirPath(project);
         createMavenModule(project, testModel, testModelTargetPath);
     }
