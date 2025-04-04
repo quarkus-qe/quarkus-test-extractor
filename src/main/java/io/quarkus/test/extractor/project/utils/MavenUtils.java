@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -20,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public final class MavenUtils {
@@ -118,6 +120,14 @@ public final class MavenUtils {
 
     public static Model getMavenModel(String resourceName) {
         return getMavenModel(getResourceAsStream(resourceName));
+    }
+
+    public static String loadResource(String resourceName) {
+        try (var is = getResourceAsStream(resourceName)) {
+            return new String(is.readAllBytes(), UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to resource " + resourceName, e);
+        }
     }
 
     private static void replacePomPlaceholders(Path targetDir, boolean parentModule) {

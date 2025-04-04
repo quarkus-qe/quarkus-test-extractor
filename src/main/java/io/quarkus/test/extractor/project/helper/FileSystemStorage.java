@@ -7,7 +7,7 @@ import java.nio.file.StandardOpenOption;
 
 import static io.quarkus.test.extractor.project.utils.PluginUtils.TARGET_DIR;
 
-final class FileSystemStorage {
+public final class FileSystemStorage {
 
     static boolean exists(String fileName) {
         return Files.exists(TARGET_DIR.resolve(fileName));
@@ -22,7 +22,7 @@ final class FileSystemStorage {
         }
     }
 
-    static void saveFileContent(String fileName, String content) {
+    public static void saveFileContent(String fileName, String content) {
         Path filePath = TARGET_DIR.resolve(fileName);
         try {
             Files.writeString(filePath, content, StandardOpenOption.CREATE_NEW);
