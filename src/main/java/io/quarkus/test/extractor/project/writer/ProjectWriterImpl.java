@@ -19,12 +19,7 @@ import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectP
 import static io.quarkus.test.extractor.project.result.ParentProject.configureIntegrationTestsBuild;
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.TARGET_DIR;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isLastModule;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusBuildParent;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.*;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
@@ -164,9 +159,5 @@ final class ProjectWriterImpl implements ProjectWriter {
         } catch (IOException e) {
             throw new RuntimeException("Failed to create test module directory", e);
         }
-    }
-
-    private static Path getTargetProjectDirPath(Project project) {
-        return TARGET_DIR.resolve(project.targetRelativePath());
     }
 }

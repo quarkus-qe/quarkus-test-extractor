@@ -95,4 +95,8 @@ public final class PluginUtils {
         // TODO: this is ugly and hacky, docs module is the last now, but if this changes this will result in tests loss
         return QUARKUS_DOCUMENTATION.equals(projectArtifactId);
     }
+
+    public static Path getTargetProjectDirPath(Project project) {
+        return TARGET_DIR.resolve(project.targetRelativePath());
+    }
 }

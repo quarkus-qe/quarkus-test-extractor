@@ -30,6 +30,16 @@ final class FileSystemStorage {
             throw new RuntimeException("Failed to save content to " + fileName, e);
         }
     }
+
+    static void replaceFileContent(String fileName, String content) {
+        Path filePath = TARGET_DIR.resolve(fileName);
+        try {
+            Files.writeString(filePath, content, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to replace file content: " + fileName, e);
+        }
+    }
+
     static void addToFile(String fileName, String content) {
         Path filePath = TARGET_DIR.resolve(fileName);
         if (!Files.exists(filePath)) {
