@@ -19,6 +19,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 public final class QuarkusBom {
 
+    private static final String QUARKUS_BOM_ARTIFACT_ID = "quarkus-bom";
     private static final String MANAGED_DEPENDENCIES_FILE_NAME = "quarkus-bom-managed-deps";
     private static final QuarkusBom INSTANCE = create();
     private final Set<String> managementKeys;
@@ -103,6 +104,10 @@ public final class QuarkusBom {
     public static void saveDependencyKeys(MavenProject mavenProject) throws MojoExecutionException {
         createDirectoryStructureIfNotExists();
         saveToFileSystem(getManagementKeys(mavenProject));
+    }
+
+    public static boolean isQuarkusBom(String artifactId) {
+        return QUARKUS_BOM_ARTIFACT_ID.equalsIgnoreCase(artifactId);
     }
 
     public static boolean isManagedByQuarkusBom(Dependency dependency) {

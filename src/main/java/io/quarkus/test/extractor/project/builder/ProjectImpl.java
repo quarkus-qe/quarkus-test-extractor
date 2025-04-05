@@ -1,9 +1,6 @@
 package io.quarkus.test.extractor.project.builder;
 
-import io.quarkus.test.extractor.project.helper.CoreExtensions;
-import io.quarkus.test.extractor.project.helper.ExtractionSummary;
-import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
-import io.quarkus.test.extractor.project.helper.QuarkusParentPom;
+import io.quarkus.test.extractor.project.helper.*;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
 import io.quarkus.test.extractor.project.utils.PluginUtils;
@@ -27,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
@@ -398,9 +394,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
         if (extensionTestModule) {
             return true;
         }
-        // integration tests - then we want to differ between integration test module
-        // and its submodules
-        return relativePath.split(Pattern.quote(File.separator)).length == 2;
+        return IntegrationTestModules.isDirectItModule(relativePath);
     }
 
     @Override

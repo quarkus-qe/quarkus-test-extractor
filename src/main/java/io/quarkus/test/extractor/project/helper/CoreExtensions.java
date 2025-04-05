@@ -17,7 +17,7 @@ public class CoreExtensions {
             String extensions = FileSystemStorage.loadFileContent(CORE_EXTENSION_FILE_NAME);
             if (extensions.isEmpty()) {
                 throw new IllegalStateException(
-                        "No core extensions found, please run 'collect-core-extensions' goal first");
+                        "No core extensions found, please run 'collect-project-metadata' goal first");
             }
             coreExtensions = extensions.lines().map(String::trim).filter(s -> !s.isEmpty()).collect(toUnmodifiableSet());
         }

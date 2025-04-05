@@ -37,18 +37,17 @@ run_tests() {
       NUMBER_OF_MODULES_IN_GROUP=$NUMBER_OF_MODULES_PER_GROUP
     fi
     echo "Number of modules in this group is $NUMBER_OF_MODULES_IN_GROUP"
-    local MODULES=($( ls $MODULE_DIR_NAME ))
+    local MODULES=($( ls -d "$MODULE_DIR_NAME/*" ))
     (( D=MODULE_GROUP_NUMBER-1, MODULES_RANGE_START=NUMBER_OF_MODULES_PER_GROUP*D, MODULES_RANGE_END=MODULES_RANGE_START+NUMBER_OF_MODULES_IN_GROUP ))
     local NUMBER_OF_MODULES=${#MODULES[@]}
     for (( i=0 ; i<$NUMBER_OF_MODULES ; i++ ));
     do
         local MODULE_NUMBER=$(( i+1 ))
         if [[ $MODULE_NUMBER -gt $MODULES_RANGE_START ]]; then
-            local MODULE_NAME="$MODULE_DIR_NAME/${MODULES[i]}"
-            echo "        <module>$MODULE_NAME</module>" >> pom-wip
-            if [[ $MODULE_NUMBER -eq $MODULES_RANGE_END ]]; then
-                break
-            fi
+          addModuleToPomFile "$MODULE_DIR_NAME/${MODULES[i]}"
+          if [[ $MODULE_NUMBER -eq $MODULES_RANGE_END ]]; then
+              break
+          fi
         fi
     done
     echo "    </modules>" >> pom-wip
@@ -65,6 +64,24 @@ run_tests() {
   
   echo "Running tests"
   mvn clean verify -V -B --no-transfer-progress $OUTER_MVN_ADDITIONAL_ARGS
+}
+
+addModuleToPomFile() {
+  # some direct folders may not have a pom.xml file, e.g. integration-tests/hibernate-orm-compatibility-5.6
+  # must be projected into:
+  # - integration-tests/hibernate-orm-compatibility-5.6/mariadb
+  # - integration-tests/hibernate-orm-compatibility-5.6/postgresql
+  local MODULE_NAME="$1"
+  local POM_FILE="$MODULE_NAME/pom.xml"
+  if [ -f "$POM_FILE" ]; then
+    echo "        <module>$MODULE_NAME</module>" >> pom-wip
+  else
+    local SUB_MODULES=($( ls -d "$MODULE_NAME/*" ))
+    for SUB_MODULE in "${SUB_MODULES[@]}"
+    do
+      addModuleToPomFile "$MODULE_NAME/$SUB_MODULE"
+    done
+  fi
 }
 
 run_tests $1 "$2" "$3" "$4"

@@ -4,6 +4,7 @@ import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Profile;
 import org.apache.maven.model.Repository;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -296,5 +298,13 @@ public final class MavenUtils {
     public static String getProfilePostfix(Project project) {
         // VT only tests should only run with Java 21
         return project.targetRelativePath().contains("integration-tests/virtual-threads") ? "-21" : "";
+    }
+
+    public static Optional<Profile> getProfile(Model model, String x) {
+        return model
+                .getProfiles()
+                .stream()
+                .filter(p -> x.equalsIgnoreCase(p.getId()))
+                .findFirst();
     }
 }
