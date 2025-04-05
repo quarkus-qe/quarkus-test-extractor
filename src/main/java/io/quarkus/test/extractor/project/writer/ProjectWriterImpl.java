@@ -15,8 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
@@ -24,11 +22,10 @@ import static io.quarkus.test.extractor.project.result.ParentProject.configureIn
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.*;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
-    private static final String TEST_EXECUTION_LIBRARY_SH = "test_execution_library.sh";
+    private static final String RUN_TESTS_BASH_SCRIPT = "run_tests.sh";
     private static final Path EXTENSION_MODULES_PATH = TARGET_DIR.resolve(EXTENSIONS);
     private static final Path IT_MODULES_PATH = TARGET_DIR.resolve(INTEGRATION_TESTS);
 
@@ -68,8 +65,8 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void addTestExecutionBashLibrary() {
-        String libContent = MavenUtils.loadResource(TEST_EXECUTION_LIBRARY_SH);
-        FileSystemStorage.saveFileContent(TEST_EXECUTION_LIBRARY_SH, libContent);
+        String libContent = MavenUtils.loadResource(RUN_TESTS_BASH_SCRIPT);
+        FileSystemStorage.saveFileContent(RUN_TESTS_BASH_SCRIPT, libContent);
     }
 
     private boolean isNotSupportedProject(Project project) {
