@@ -44,7 +44,7 @@ run_tests() {
     do
         local MODULE_NUMBER=$(( i+1 ))
         if [[ $MODULE_NUMBER -gt $MODULES_RANGE_START ]]; then
-          addModuleToPomFile "$MODULE_DIR_NAME/${MODULES[i]}"
+          addModuleToPomFile "${MODULES[i]}"
           if [[ $MODULE_NUMBER -eq $MODULES_RANGE_END ]]; then
               break
           fi
@@ -79,7 +79,7 @@ addModuleToPomFile() {
     local SUB_MODULES=($( ls -d $MODULE_NAME/* ))
     for SUB_MODULE in "${SUB_MODULES[@]}"
     do
-      addModuleToPomFile "$MODULE_NAME/$SUB_MODULE"
+      addModuleToPomFile "$SUB_MODULE"
     done
   fi
 }
