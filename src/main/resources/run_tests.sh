@@ -67,4 +67,4 @@ run_tests() {
   mvn clean verify -V -B --no-transfer-progress $OUTER_MVN_ADDITIONAL_ARGS
 }
 
-run_tests $1 $2 $3 $4
+run_tests $1 "$2" "$3" "$4"
