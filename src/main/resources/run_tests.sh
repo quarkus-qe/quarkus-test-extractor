@@ -76,7 +76,7 @@ addModuleToPomFile() {
   if [ -f "$POM_FILE" ]; then
     echo "        <module>$MODULE_NAME</module>" >> pom-wip
   else
-    local SUB_MODULES=($( ls -d "$MODULE_NAME/*" ))
+    local SUB_MODULES=($( ls -d $MODULE_NAME/* ))
     for SUB_MODULE in "${SUB_MODULES[@]}"
     do
       addModuleToPomFile "$MODULE_NAME/$SUB_MODULE"
