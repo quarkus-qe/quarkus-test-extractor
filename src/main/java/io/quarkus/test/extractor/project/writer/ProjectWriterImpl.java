@@ -1,10 +1,7 @@
 package io.quarkus.test.extractor.project.writer;
 
 import io.quarkus.test.extractor.project.builder.Project;
-import io.quarkus.test.extractor.project.helper.ExtractionSummary;
-import io.quarkus.test.extractor.project.helper.FileSystemStorage;
-import io.quarkus.test.extractor.project.helper.QuarkusBuildParent;
-import io.quarkus.test.extractor.project.helper.TestProjectCustomizer;
+import io.quarkus.test.extractor.project.helper.*;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.result.TestModuleProject;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
@@ -15,9 +12,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
+import static io.quarkus.test.extractor.project.helper.UnsupportedProjects.isNotSupportedProject;
 import static io.quarkus.test.extractor.project.result.ParentProject.configureIntegrationTestsBuild;
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
@@ -46,7 +45,7 @@ final class ProjectWriterImpl implements ProjectWriter {
         } else if (isIntegrationTestsParent(project)) {
             configureIntegrationTestsBuild(project);
         } else if (isNotSupportedProject(project)) {
-            // TODO: start supporting ^^ projects
+            removeUnsupportedProject(project);
         } else if (isQuarkusParentPomProject(project)) {
             collectPluginVersions(project);
         } else if (copyAsIs(project)) {
@@ -64,15 +63,30 @@ final class ProjectWriterImpl implements ProjectWriter {
         }
     }
 
+    private static void removeUnsupportedProject(Project project) {
+        if (!project.isDirectSubModule()) {
+            var parentTargetDir = getTargetProjectDirPath(project.parentProject());
+            var parentTargetPomPath = parentTargetDir.resolve(POM_XML);
+            // following condition allows to "not support" whole directories without POM
+            if (Files.exists(parentTargetPomPath)) {
+                var parentModel = MavenUtils.getMavenModel(parentTargetPomPath);
+                parentModel.setModules(new ArrayList<>(parentModel.getModules()));
+                var currentProjectDirName = getTargetProjectDirPath(project).getFileName().toString();
+                parentModel.removeModule(currentProjectDirName);
+                parentModel.getProfiles().forEach(profile -> {
+                    if (profile.getModules() != null && profile.getModules().contains(currentProjectDirName)) {
+                        profile.setModules(new ArrayList<>(profile.getModules()));
+                        profile.removeModule(currentProjectDirName);
+                    }
+                });
+                MavenUtils.writeMavenModel(parentModel, parentTargetDir);
+            }
+        }
+    }
+
     private static void addTestExecutionBashLibrary() {
         String libContent = MavenUtils.loadResource(RUN_TESTS_BASH_SCRIPT);
         FileSystemStorage.saveFileContent(RUN_TESTS_BASH_SCRIPT, libContent);
-    }
-
-    private boolean isNotSupportedProject(Project project) {
-        // following projects need more investigations before we start support them
-        return project.targetRelativePath().contains("integration-tests/test-extension")
-                || project.targetRelativePath().contains("integration-tests/grpc-external-proto-test");
     }
 
     private static boolean isIntegrationTestsParent(Project project) {

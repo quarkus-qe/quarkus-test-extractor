@@ -9,10 +9,7 @@ import org.apache.maven.model.Repository;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -118,6 +115,14 @@ public final class MavenUtils {
 
     public static boolean isNotIgnoredProperty(String propertyName) {
         return !IGNORED_PROPERTIES.contains(propertyName);
+    }
+
+    public static Model getMavenModel(Path pomXmlPath) {
+        try {
+            return getMavenModel(new FileInputStream(pomXmlPath.toFile()));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("POM file not found at " + pomXmlPath, e);
+        }
     }
 
     public static Model getMavenModel(String resourceName) {

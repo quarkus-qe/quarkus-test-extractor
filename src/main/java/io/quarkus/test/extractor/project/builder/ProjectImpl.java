@@ -56,6 +56,12 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
     }
 
     @Override
+    public Project parentProject() {
+        var parent = mavenProject.getParent();
+        return Project.extract(parent, ExtractionSummary.of(parent.getArtifactId()));
+    }
+
+    @Override
     public List<Profile> profiles() {
         List<Profile> profiles = new ArrayList<>();
         mavenProject.getOriginalModel().getProfiles().forEach(p -> {

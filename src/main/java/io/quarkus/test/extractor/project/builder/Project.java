@@ -19,6 +19,8 @@ public sealed interface Project permits ProjectImpl {
         return new ProjectImpl(project, extractionSummary);
     }
 
+    Project parentProject();
+
     String originalProjectName();
 
     List<Profile> profiles();
