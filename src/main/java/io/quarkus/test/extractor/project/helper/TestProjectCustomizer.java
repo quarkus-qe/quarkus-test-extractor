@@ -24,7 +24,24 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-rest-client-reactive-kotlin-serialization-with-validator",
                 createKotlinSerializationWithValidatorCustomizer(),
                 "quarkus-integration-test-packaging", createPackagingItModuleCustomizer(),
-                "quarkus-integration-test-main", createMainItModuleCustomizer());
+                "quarkus-integration-test-main", createMainItModuleCustomizer(),
+                "quarkus-integration-test-maven", createMavenItModuleCustomizer());
+    }
+
+    private static TestProjectCustomizer createMavenItModuleCustomizer() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                // solves following exception experienced when run io.quarkus.maven.it.TestMojoIT:
+                // [ERROR] Resolving expression: '${maven.compiler.source}': Detected the following recursive
+                // expression cycle in 'maven.compiler.source': [maven.compiler.source] @
+                // [ERROR] Resolving expression: '${maven.compiler.target}': Detected the following
+                // recursive expression cycle in 'maven.compiler.target': [maven.compiler.target] @
+                var properties = model.getProperties();
+                properties.put("maven.compiler.source", "$USE-EXTRACTED-PROPERTIES{maven.compiler.release}");
+                properties.put("maven.compiler.target", "$USE-EXTRACTED-PROPERTIES{maven.compiler.release}");
+            }
+        };
     }
 
     private TestProjectCustomizer() {
