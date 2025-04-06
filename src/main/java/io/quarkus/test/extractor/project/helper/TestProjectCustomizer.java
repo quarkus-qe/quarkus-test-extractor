@@ -6,10 +6,8 @@ import org.apache.maven.model.Model;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -25,7 +23,8 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-devtools", createDevToolsItModuleCustomizer(),
                 "quarkus-integration-test-rest-client-reactive-kotlin-serialization-with-validator",
                 createKotlinSerializationWithValidatorCustomizer(),
-                "quarkus-integration-test-packaging", createPackagingItModuleCustomizer());
+                "quarkus-integration-test-packaging", createPackagingItModuleCustomizer(),
+                "quarkus-integration-test-main", createMainItModuleCustomizer());
     }
 
     private TestProjectCustomizer() {
@@ -39,6 +38,20 @@ public abstract class TestProjectCustomizer {
         if (testProjectCustomizer != null) {
             testProjectCustomizer.customize(project, model);
         }
+    }
+
+    private static TestProjectCustomizer createMainItModuleCustomizer() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                var fileChanger = new FileChanger(project, "src/main/resources/application.properties");
+                fileChanger.changeContent(testContent -> testContent
+                        .replace("io.quarkus\\:quarkus-integration-test-shared-library",
+                            "io.quarkus.qe.tests\\:quarkus-integration-test-shared-library")
+                        .replace("io.quarkus\\:quarkus-integration-test-main",
+                            "io.quarkus.qe.tests\\:quarkus-integration-test-main"));
+            }
+        };
     }
 
     private static TestProjectCustomizer createPackagingItModuleCustomizer() {
@@ -57,9 +70,11 @@ public abstract class TestProjectCustomizer {
                 // change the 'quarkus.class-loading.removed-resources'."io.quarkus\:quarkus-integration-test-shared-library"
                 // configuration property value to the one with the 'io.quarkus.qe.tests' group id instead
                 var fileChanger = new FileChanger(project, "src/test/java/io/quarkus/removedclasses/AbstractRemovedResourceTest.java");
-                fileChanger.changeContent(testContent -> testContent.replace(
-                        "io.quarkus\\\\:quarkus-integration-test-shared-library",
-                        "io.quarkus.qe.tests\\\\:quarkus-integration-test-shared-library"));
+                fileChanger.changeContent(testContent -> {
+                    testContent = testContent.replace("io.quarkus\\\\:quarkus-integration-test-shared-library",
+                            "io.quarkus.qe.tests\\\\:quarkus-integration-test-shared-library");
+                    return testContent;
+                });
             }
         };
     }
