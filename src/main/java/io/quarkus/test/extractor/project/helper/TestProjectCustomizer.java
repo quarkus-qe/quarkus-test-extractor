@@ -1,6 +1,7 @@
 package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 
@@ -40,6 +41,17 @@ public abstract class TestProjectCustomizer {
                 var properties = model.getProperties();
                 properties.put("maven.compiler.source", "$USE-EXTRACTED-PROPERTIES{maven.compiler.release}");
                 properties.put("maven.compiler.target", "$USE-EXTRACTED-PROPERTIES{maven.compiler.release}");
+
+                // I can't reproduce it locally but io.quarkus.maven.AddExtensionsMojoTest fails with:
+                // Caused by: io.quarkus.registry.RegistryResolutionException:
+                // Failed to resolve io.quarkus:quarkus-bom-quarkus-platform-descriptor:3.20.0:json:3.20.0
+                model.setDependencies(new ArrayList<>(model.getDependencies()));
+                var dependency = new Dependency();
+                dependency.setGroupId("$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}");
+                dependency.setArtifactId("quarkus-bom-quarkus-platform-descriptor");
+                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
+                dependency.setType(MavenUtils.POM);
+                model.addDependency(dependency);
             }
         };
     }
