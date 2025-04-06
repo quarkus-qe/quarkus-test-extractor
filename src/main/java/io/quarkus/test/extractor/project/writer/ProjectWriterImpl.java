@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import static io.quarkus.test.extractor.project.helper.DisabledTest.hasProjectDisabledTests;
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
 import static io.quarkus.test.extractor.project.helper.UnsupportedProjects.isNotSupportedProject;
 import static io.quarkus.test.extractor.project.result.ParentProject.configureIntegrationTestsBuild;
@@ -128,9 +129,16 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void copyAllFilesInProjectExceptForPom(Project project) {
+        boolean containsDisabledTests = hasProjectDisabledTests(project.artifactId());
+        System.out.println("'''''project'''''' project artifact id is " + project.artifactId());
+        if (containsDisabledTests) {
+            System.out.println("///////// contains disabled tests " + project.artifactId());
+        } else if (project.artifactId().contains("kubernetes")) {
+            System.out.println("////////////K8 is " + project.artifactId());
+        }
         File sourceProjectDir = project.projectPath().toFile();
         File targetProjectDir = getTargetProjectDirPath(project).toFile();
-        copyDirectory(sourceProjectDir, targetProjectDir);
+        copyDirectory(sourceProjectDir, targetProjectDir, containsDisabledTests, project.artifactId());
         try {
             Files.deleteIfExists(getTargetProjectDirPath(project).resolve(POM_XML));
         } catch (IOException e) {

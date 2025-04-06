@@ -1,6 +1,7 @@
 package io.quarkus.test.extractor.project.utils;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.helper.DisabledTest;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.quarkus.test.extractor.project.helper.DisabledTest.isNotDisabledTest;
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -261,11 +263,17 @@ public final class MavenUtils {
     }
 
     public static void copyDirectory(File sourceDirectory, File destinationDirectory) {
-        destinationDirectory.mkdirs();
-        copyDirectory(sourceDirectory, destinationDirectory, destinationDirectory);
+        copyDirectory(sourceDirectory, destinationDirectory, false, null);
     }
 
-    private static void copyDirectory(File sourceDir, File destinationDir, File originalDir) {
+    public static void copyDirectory(File sourceDirectory, File destinationDirectory, boolean containsDisabledTests,
+                                     String artifactId) {
+        destinationDirectory.mkdirs();
+        copyDirectory(sourceDirectory, destinationDirectory, destinationDirectory, containsDisabledTests, artifactId);
+    }
+
+    private static void copyDirectory(File sourceDir, File destinationDir, File originalDir,
+                                      boolean containsDisabledTests, String artifactId) {
         File[] files = sourceDir.listFiles();
         if (files != null) {
             String sourcePath = sourceDir.getAbsolutePath();
@@ -274,25 +282,27 @@ public final class MavenUtils {
                     String dest = source.getAbsolutePath();
                     dest = dest.substring(sourcePath.length() + 1);
                     File destination = new File(destinationDir, dest);
-                    destination.mkdirs();
                     if (source.isFile()) {
-                        destination = destination.getParentFile();
-                        File destinationFile = new File(destination, source.getName());
-                        if (!destinationFile.exists()) {
+                        if (!containsDisabledTests || isNotDisabledTest(artifactId, source)) {
+                            destination = destination.getParentFile();
+                            File destinationFile = new File(destination, source.getName());
+                            if (!destinationFile.exists()) {
+                                try {
+                                    destinationFile.createNewFile();
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Failed to create file " + destinationFile, e);
+                                }
+                            }
                             try {
-                                destinationFile.createNewFile();
+                                Files.copy(source.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
                             } catch (IOException e) {
-                                throw new RuntimeException("Failed to create file " + destinationFile, e);
+                                throw new RuntimeException("Failed to copy '%s' file to '%s'"
+                                        .formatted(source.getPath(), destinationFile.getPath()), e);
                             }
                         }
-                        try {
-                            Files.copy(source.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to copy '%s' file to '%s'"
-                                    .formatted(source.getPath(), destinationFile.getPath()), e);
-                        }
                     } else {
-                        copyDirectory(source, destination, originalDir);
+                        destination.mkdirs();
+                        copyDirectory(source, destination, originalDir, containsDisabledTests, artifactId);
                     }
                 }
             }
