@@ -49,7 +49,8 @@ public abstract class TestProjectCustomizer {
                 dependency.setGroupId("$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}");
                 dependency.setArtifactId("quarkus-bom-quarkus-platform-descriptor");
                 dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
-                dependency.setType(MavenUtils.POM);
+                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
+                dependency.setType("json");
                 model.addDependency(dependency);
             }
         };
