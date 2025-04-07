@@ -1,9 +1,11 @@
 package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.result.ParentProject;
 import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,7 +27,10 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-packaging", createPackagingItModuleCustomizer(),
                 "quarkus-integration-test-main", createMainItModuleCustomizer(),
                 "quarkus-integration-test-maven", createMavenItModuleCustomizer(),
-                "quarkus-integration-test-hibernate-reactive-panache-kotlin", removeQuarkusRestKotlinExtension());
+                "quarkus-integration-test-hibernate-reactive-panache-kotlin", removeQuarkusRestKotlinExtension(),
+                "quarkus-integration-test-class-transformer", addCreateExtRuntimePlugins(),
+                "quarkus-integration-test-class-transformer-deployment", addCreateExtDeploymentPlugins()
+        );
     }
 
     private static TestProjectCustomizer createMavenItModuleCustomizer() {
@@ -200,6 +205,32 @@ public abstract class TestProjectCustomizer {
             @Override
             protected void customize(Project project, Model model) {
                 removeDependency(model, "quarkus-rest-kotlin");
+            }
+        };
+    }
+
+    private static TestProjectCustomizer addCreateExtRuntimePlugins() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                // see https://quarkus.io/guides/writing-extensions#using-maven for runtime module
+                ParentProject.getProfile("create-extension-runtime-module").ifPresent(profile -> {
+                    var extensionRuntimePlugins = profile.getBuild().getPlugins();
+                    model.getBuild().getPlugins().addAll(extensionRuntimePlugins);
+                });
+            }
+        };
+    }
+
+    private static TestProjectCustomizer addCreateExtDeploymentPlugins() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                // see https://quarkus.io/guides/writing-extensions#using-maven for deployment module
+                ParentProject.getProfile("create-extension-deployment-module").ifPresent(profile -> {
+                    var extensionDeploymentPlugins = profile.getBuild().getPlugins();
+                    model.getBuild().getPlugins().addAll(extensionDeploymentPlugins);
+                });
             }
         };
     }

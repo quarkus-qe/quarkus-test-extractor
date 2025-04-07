@@ -149,6 +149,75 @@
             </modules>
         </profile>
         <profile>
+            <id>create-extension-runtime-module</id>
+            <activation>
+                <property>
+                    <name>create-extension-runtime-module</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- here so that IT test extensions like 'class-transformer' works -->
+                    <plugin>
+                        <groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</groupId>
+                        <artifactId>quarkus-extension-maven-plugin</artifactId>
+                        <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>extension-descriptor</goal>
+                                </goals>
+                                <configuration>
+                                    <deployment>$USE-EXTRACTED-PROPERTIES{project.groupId}:$USE-EXTRACTED-PROPERTIES{project.artifactId}-deployment:$USE-EXTRACTED-PROPERTIES{project.version}</deployment>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>create-extension-deployment-module</id>
+            <activation>
+                <property>
+                    <name>create-extension-deployment-module</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- here so that IT test extensions like 'class-transformer' works -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>integration-tests-build</id>
             <activation>
                 <property>
@@ -254,6 +323,7 @@
                         <jvmTarget>${maven.compiler.release}</jvmTarget>
                     </configuration>
                 </plugin>
+
             </plugins>
         </pluginManagement>
     </build>

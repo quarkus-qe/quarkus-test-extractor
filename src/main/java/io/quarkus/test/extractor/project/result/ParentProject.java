@@ -8,11 +8,7 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 
@@ -150,7 +146,7 @@ public final class ParentProject {
         }
     }
 
-    private static Optional<Profile> getProfile(String x) {
+    public static Optional<Profile> getProfile(String x) {
         return MAVEN_MODEL
                 .getProfiles()
                 .stream()
@@ -159,8 +155,7 @@ public final class ParentProject {
     }
 
     public static void configureIntegrationTestsBuild(Project project) {
-        var build = project.originalModel().getBuild();
         var integrationTestsBuildProfile = getProfile("integration-tests-build").orElseThrow();
-        integrationTestsBuildProfile.setBuild(build);
+        integrationTestsBuildProfile.setBuild(project.originalModel().getBuild());
     }
 }

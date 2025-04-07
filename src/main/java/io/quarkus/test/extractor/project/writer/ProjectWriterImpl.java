@@ -113,6 +113,7 @@ final class ProjectWriterImpl implements ProjectWriter {
             parent.setVersion(project.version());
             parent.setRelativePath(computeRelativePath(project));
         }
+        TestProjectCustomizer.customizeIfNecessary(project, model);
         createMavenModule(project, model, getTargetProjectDirPath(project));
         // we copy the whole project, so we need to manage it so that it is found
         // if some test module needs it
