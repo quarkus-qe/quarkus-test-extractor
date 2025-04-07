@@ -26,7 +26,8 @@ public abstract class TestProjectCustomizer {
                 createKotlinSerializationWithValidatorCustomizer(),
                 "quarkus-integration-test-packaging", createPackagingItModuleCustomizer(),
                 "quarkus-integration-test-main", createMainItModuleCustomizer(),
-                "quarkus-integration-test-maven", createMavenItModuleCustomizer());
+                "quarkus-integration-test-maven", createMavenItModuleCustomizer(),
+                "quarkus-integration-test-hibernate-reactive-panache-kotlin", removeQuarkusRestKotlinExtension());
     }
 
     private static TestProjectCustomizer createMavenItModuleCustomizer() {
@@ -174,6 +175,56 @@ public abstract class TestProjectCustomizer {
                 // this is not super important, but we should at least warn
                 System.err.println("Failed to find file " + absolutePath + " which means implementation has changed");
             }
+        }
+    }
+
+    /**
+     * This works around of what is most likely flakiness (bug) in Quarkus, it removes Quarkus REST Kotlin extension
+     * so that only transitive Quarkus Kotlin extension exists hopefully this will help with following error:
+     * {@code
+     * 09:37:08 [ERROR] Failed to execute goal io.quarkus:quarkus-maven-plugin:3.20.0:build (default)
+     * on project quarkus-integration-test-hibernate-reactive-panache-kotlin: Failed to build quarkus application:
+     * io.quarkus.builder.BuildException: Build failure: Build failed due to errors
+     * 09:37:08 [ERROR]    [error]: Build step io.quarkus.deployment.steps.CapabilityAggregationStep#aggregateCapabilities
+     * threw an exception: java.lang.IllegalStateException: Please make sure there is only one provider of the following
+     * capabilities:
+     * 09:37:08 [ERROR] capability io.quarkus.rest.kotlinx-serialization is provided by:
+     * 09:37:08 [ERROR]   - io.quarkus:quarkus-rest-kotlin:3.20.0
+     * 09:37:08 [ERROR]   - io.quarkus:quarkus-rest-kotlin:3.20.0
+     * 09:37:08 [ERROR] capability io.quarkus.resteasy.reactive.json.kotlinx-serialization is provided by:
+     * 09:37:08 [ERROR]   - io.quarkus:quarkus-rest-kotlin:3.20.0
+     * 09:37:08 [ERROR]   - io.quarkus:quarkus-rest-kotlin:3.20.0
+     * 09:37:08 [ERROR]
+     * 09:37:08 [ERROR]    at io.quarkus.deployment.steps.CapabilityAggregationStep.aggregateCapabilities
+     * (CapabilityAggregationStep.java:158)
+     * 09:37:08 [ERROR]    at java.base/java.lang.invoke.MethodHandle.invokeWithArguments(MethodHandle.java:732)
+     * 09:37:08 [ERROR]    at io.quarkus.deployment.ExtensionLoader$3.execute(ExtensionLoader.java:856)
+     * 09:37:08 [ERROR]    at io.quarkus.builder.BuildContext.run(BuildContext.java:255)
+     * 09:37:08 [ERROR]    at org.jboss.threads.ContextHandler$1.runWith(ContextHandler.java:18)
+     * 09:37:08 [ERROR]    at org.jboss.threads.EnhancedQueueExecutor$Task.doRunWith(EnhancedQueueExecutor.java:2675)
+     * 09:37:08 [ERROR]    at org.jboss.threads.EnhancedQueueExecutor$Task.run(EnhancedQueueExecutor.java:2654)
+     * 09:37:08 [ERROR]    at org.jboss.threads.EnhancedQueueExecutor.runThreadBody(EnhancedQueueExecutor.java:1627)
+     * 09:37:08 [ERROR]    at org.jboss.threads.EnhancedQueueExecutor$ThreadBody.run(EnhancedQueueExecutor.java:1594)
+     * 09:37:08 [ERROR]    at java.base/java.lang.Thread.run(Thread.java:840)
+     * 09:37:08 [ERROR]    at org.jboss.threads.JBossThread.run(JBossThread.java:499)
+     * 09:37:08 [ERROR] -> [Help 1]
+     * 09:37:08 [ERROR]
+     * }
+     * It is hard to provide a reproducer, so I did not open upstream issue yet.
+     */
+    private static TestProjectCustomizer removeQuarkusRestKotlinExtension() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                removeDependency(model, "quarkus-rest-kotlin");
+            }
+        };
+    }
+
+    private static void removeDependency(Model model, String artifactId) {
+        if (model.getDependencies() != null && !model.getDependencies().isEmpty()) {
+            model.setDependencies(new ArrayList<>(model.getDependencies()));
+            model.getDependencies().removeIf(dependency -> artifactId.equalsIgnoreCase(dependency.getArtifactId()));
         }
     }
 }
