@@ -179,6 +179,9 @@
                 <version>$USE-EXTRACTED-PROPERTIES{version.compiler.plugin}</version>
                 <configuration>
                     <parameters>true</parameters>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
@@ -239,6 +242,16 @@
                     <version>$USE-EXTRACTED-PROPERTIES{version.failsafe.plugin}</version>
                     <configuration>
                         <argLine>-Djava.io.tmpdir="$USE-EXTRACTED-PROPERTIES{project.build.directory}" $USE-EXTRACTED-PROPERTIES{failsafe.argLine.additional}</argLine>
+                    </configuration>
+                </plugin>
+                <!-- this must be here because java parameters must be set true on a global level early -->
+                <plugin>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-maven-plugin</artifactId>
+                    <version>${kotlin.version}</version>
+                    <configuration>
+                        <javaParameters>true</javaParameters>
+                        <jvmTarget>${maven.compiler.release}</jvmTarget>
                     </configuration>
                 </plugin>
             </plugins>

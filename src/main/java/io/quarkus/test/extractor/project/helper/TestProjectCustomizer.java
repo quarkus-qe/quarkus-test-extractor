@@ -22,8 +22,6 @@ public abstract class TestProjectCustomizer {
     static {
         CUSTOMIZERS = Map.of("quarkus-websockets-next-deployment", createWebSocketsNextKotlinCustomizer(),
                 "quarkus-integration-test-devtools", createDevToolsItModuleCustomizer(),
-                "quarkus-integration-test-rest-client-reactive-kotlin-serialization-with-validator",
-                createKotlinSerializationWithValidatorCustomizer(),
                 "quarkus-integration-test-packaging", createPackagingItModuleCustomizer(),
                 "quarkus-integration-test-main", createMainItModuleCustomizer(),
                 "quarkus-integration-test-maven", createMavenItModuleCustomizer(),
@@ -105,22 +103,6 @@ public abstract class TestProjectCustomizer {
                             "io.quarkus.qe.tests\\\\:quarkus-integration-test-shared-library");
                     return testContent;
                 });
-            }
-        };
-    }
-
-    private static TestProjectCustomizer createKotlinSerializationWithValidatorCustomizer() {
-        return new TestProjectCustomizer() {
-            @Override
-            protected void customize(Project project, Model model) {
-                // io.quarkus.it.rest.client.BasicTest expects that during invalid input verification
-                // that field 'validate.id' value is reported as too short string
-                // the validation itself works, but the field is reported as 'validate.arg0'
-                // I suspect there is some library missing or plugin missing or wrong path to classes,
-                // but I failed to figure which one
-                // TODO: if we start supporting Kotlin, this needs to be debugged
-                var fileChanger = new FileChanger(project, "src/test/kotlin/io/quarkus/it/rest/client/BasicTest.kt");
-                fileChanger.changeContent(testContent -> testContent.replace("validate.id", "validate.arg0"));
             }
         };
     }
