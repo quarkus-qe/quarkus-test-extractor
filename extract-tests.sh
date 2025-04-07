@@ -193,6 +193,7 @@ if [ "$PUSH_EXTRACTED_TESTS" = true ]; then
     git config --local user.email "quarkus-qe@redhat.com"
     git config --local user.name "QuarkusQE"
   fi
+  echo '*/target/**'  > .gitignore
   git add *
   GIT_COMMIT_OUTPUT=$(git commit -am "Add tests extracted from $QUARKUS_GIT_HEAD")
   if [[ $GIT_COMMIT_OUTPUT == *"nothing to commit"* ]]; then
