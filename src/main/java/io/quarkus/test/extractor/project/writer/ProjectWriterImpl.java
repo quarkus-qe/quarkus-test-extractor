@@ -12,8 +12,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.Set;
 
 import static io.quarkus.test.extractor.project.helper.DisabledTest.hasProjectDisabledTests;
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
@@ -22,6 +24,7 @@ import static io.quarkus.test.extractor.project.result.ParentProject.configureIn
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.*;
+import static java.nio.file.attribute.PosixFilePermission.*;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
@@ -59,9 +62,15 @@ final class ProjectWriterImpl implements ProjectWriter {
             ParentProject.writeTo(TARGET_DIR);
             extractionSummary.createAndStoreFinalSummary();
             addTestExecutionBashLibrary();
+            createEmptyFileInProjectRootDir();
         } else {
             extractionSummary.createAndStorePartialSummary();
         }
+    }
+
+    private static void createEmptyFileInProjectRootDir() {
+        // create a file expected by 'docker-prune.location' defined in pom-test-parent-skeleton.xml file
+        FileSystemStorage.saveFileContent("empty-file", "", true);
     }
 
     private static void removeUnsupportedProject(Project project) {
@@ -87,7 +96,7 @@ final class ProjectWriterImpl implements ProjectWriter {
 
     private static void addTestExecutionBashLibrary() {
         String libContent = MavenUtils.loadResource(RUN_TESTS_BASH_SCRIPT);
-        FileSystemStorage.saveFileContent(RUN_TESTS_BASH_SCRIPT, libContent);
+        FileSystemStorage.saveFileContent(RUN_TESTS_BASH_SCRIPT, libContent, true);
     }
 
     private static boolean isIntegrationTestsParent(Project project) {
@@ -130,12 +139,6 @@ final class ProjectWriterImpl implements ProjectWriter {
 
     private static void copyAllFilesInProjectExceptForPom(Project project) {
         boolean containsDisabledTests = hasProjectDisabledTests(project.artifactId());
-        System.out.println("'''''project'''''' project artifact id is " + project.artifactId());
-        if (containsDisabledTests) {
-            System.out.println("///////// contains disabled tests " + project.artifactId());
-        } else if (project.artifactId().contains("kubernetes")) {
-            System.out.println("////////////K8 is " + project.artifactId());
-        }
         File sourceProjectDir = project.projectPath().toFile();
         File targetProjectDir = getTargetProjectDirPath(project).toFile();
         copyDirectory(sourceProjectDir, targetProjectDir, containsDisabledTests, project.artifactId());

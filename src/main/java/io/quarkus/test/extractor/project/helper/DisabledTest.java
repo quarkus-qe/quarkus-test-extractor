@@ -18,15 +18,10 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
 
     public static boolean isNotDisabledTest(String artifactId, File file) {
         String filePath = file.getPath();
-        System.out.println("///////????/// file path is " + filePath);
-        boolean neco = DISABLED_TESTS
+        return DISABLED_TESTS
                 .stream()
                 .filter(disabledTest -> disabledTest.artifactIds.contains(artifactId))
                 .map(DisabledTest::testClassPath)
                 .noneMatch(filePath::endsWith);
-        if (!neco) {
-            System.out.println("/////neconeco//// " + filePath);
-        }
-        return neco;
     }
 }

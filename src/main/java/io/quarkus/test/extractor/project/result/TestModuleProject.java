@@ -14,16 +14,18 @@ public final class TestModuleProject {
     public static Model create(Project project) {
         Model model = MAVEN_MODEL.clone();
         model.setVersion(project.version());
+        model.setProperties(project.properties());
         if (project.isDirectSubModule()) {
             model.getParent().setVersion(project.version());
-            model.getParent().setRelativePath(computeRelativePath(project));
+            var parentRelativePath = computeRelativePath(project);
+            model.getParent().setRelativePath(parentRelativePath);
+            model.getProperties().put("rootDir", parentRelativePath);
         } else {
             model.setParent(project.originalModel().getParent());
         }
         model.getParent().setGroupId(TEST_PARENT_GROUP_ID);
         model.setArtifactId(project.artifactId());
         model.setName(project.name());
-        model.setProperties(project.properties());
         model.setDependencies(project.dependencies());
         model.setRepositories(project.repositories());
         model.setPluginRepositories(project.pluginRepositories());

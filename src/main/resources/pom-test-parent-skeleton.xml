@@ -30,6 +30,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <reruns>3</reruns>
         <skipITs>true</skipITs>
+        <!-- this property must be set because plugins require it, but upstream does nothing on Linux ATM and so do we -->
+        <docker-prune.location>$USE-EXTRACTED-PROPERTIES{rootDir}empty-file</docker-prune.location>
     </properties>
 
     <dependencyManagement>

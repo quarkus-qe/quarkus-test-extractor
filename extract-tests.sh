@@ -49,7 +49,7 @@ if [ "$VERBOSE" = true ]; then
     echo '- Quarkus project URL:' $QUARKUS_URL
     echo '- Quarkus project branch or tag:' $QUARKUS_GIT_CHECKOUT
     echo '- Quarkus project source directory:' $QUARKUS_SOURCE_DIR
-    echo '- Test extraction result will be placed in' $TARGET_DIR
+    echo '- Test extraction result will be placed in (re-creating dir)' $TARGET_DIR
     if [ "$PUSH_EXTRACTED_TESTS" = true ] ; then
       echo '- Extracted tests will be pushed to the project' $EXTRACTED_TESTS_PROJECT 'and branch' $EXTRACTED_TESTS_PROJECT_BRANCH
     fi
