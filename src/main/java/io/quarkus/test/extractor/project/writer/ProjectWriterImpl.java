@@ -69,6 +69,7 @@ final class ProjectWriterImpl implements ProjectWriter {
         // create a file expected by 'docker-prune.location' defined in pom-test-parent-skeleton.xml file
         // in my experience when one test fails containers started by a Docker plugin sometimes keep running
         // and this should stop them, therefore addressing memory and port issues
+        // it can be racy as sigkill is also issued by plugins, but they don't wait, so make the command lenient
         FileSystemStorage.saveFileContent("prune-docker-containers", """
                 cmd=""
                 if [[ "$DOCKER_HOST" == *podman* ]]; then
@@ -76,7 +77,7 @@ final class ProjectWriterImpl implements ProjectWriter {
                 else
                     cmd="docker"
                 fi
-                $cmd ps --format "$cmd stop {{.ID}};$cmd rm {{.ID}};" | bash
+                $cmd ps --format "$cmd stop {{.ID}} || true;$cmd rm {{.ID}} || true;" | bash
                 """.stripIndent(), true);
     }
 
