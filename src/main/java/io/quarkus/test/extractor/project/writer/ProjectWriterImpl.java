@@ -12,10 +12,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.Set;
 
 import static io.quarkus.test.extractor.project.helper.DisabledTest.hasProjectDisabledTests;
 import static io.quarkus.test.extractor.project.helper.QuarkusParentPom.collectPluginVersions;
@@ -24,7 +22,6 @@ import static io.quarkus.test.extractor.project.result.ParentProject.configureIn
 import static io.quarkus.test.extractor.project.result.ParentProject.copyAsIs;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.*;
-import static java.nio.file.attribute.PosixFilePermission.*;
 
 final class ProjectWriterImpl implements ProjectWriter {
 
@@ -62,15 +59,25 @@ final class ProjectWriterImpl implements ProjectWriter {
             ParentProject.writeTo(TARGET_DIR);
             extractionSummary.createAndStoreFinalSummary();
             addTestExecutionBashLibrary();
-            createEmptyFileInProjectRootDir();
+            createPruneDockerContainersFileInProjectRootDir();
         } else {
             extractionSummary.createAndStorePartialSummary();
         }
     }
 
-    private static void createEmptyFileInProjectRootDir() {
+    private static void createPruneDockerContainersFileInProjectRootDir() {
         // create a file expected by 'docker-prune.location' defined in pom-test-parent-skeleton.xml file
-        FileSystemStorage.saveFileContent("empty-file", "", true);
+        // in my experience when one test fails containers started by a Docker plugin sometimes keep running
+        // and this should stop them, therefore addressing memory and port issues
+        FileSystemStorage.saveFileContent("prune-docker-containers", """
+                cmd=""
+                if [[ "$DOCKER_HOST" == *podman* ]]; then
+                    cmd="podman"
+                else
+                    cmd="docker"
+                fi
+                $cmd ps --format "$cmd stop {{.ID}};$cmd rm {{.ID}};" | bash
+                """.stripIndent(), true);
     }
 
     private static void removeUnsupportedProject(Project project) {

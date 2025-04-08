@@ -31,7 +31,7 @@
         <reruns>3</reruns>
         <skipITs>true</skipITs>
         <!-- this property must be set because plugins require it, but upstream does nothing on Linux ATM and so do we -->
-        <docker-prune.location>$USE-EXTRACTED-PROPERTIES{rootDir}empty-file</docker-prune.location>
+        <docker-prune.location>$USE-EXTRACTED-PROPERTIES{rootDir}prune-docker-containers</docker-prune.location>
     </properties>
 
     <dependencyManagement>
