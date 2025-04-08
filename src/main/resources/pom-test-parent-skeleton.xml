@@ -32,6 +32,8 @@
         <skipITs>true</skipITs>
         <!-- this property must be set because plugins require it, but upstream does nothing on Linux ATM and so do we -->
         <docker-prune.location>$USE-EXTRACTED-PROPERTIES{rootDir}prune-docker-containers</docker-prune.location>
+        <!-- SELinux access label, used when mounting local volumes into containers in tests -->
+        <volume.access.modifier>:Z</volume.access.modifier>
     </properties>
 
     <dependencyManagement>
