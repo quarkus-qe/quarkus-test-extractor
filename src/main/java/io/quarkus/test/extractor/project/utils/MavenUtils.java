@@ -1,7 +1,6 @@
 package io.quarkus.test.extractor.project.utils;
 
 import io.quarkus.test.extractor.project.builder.Project;
-import io.quarkus.test.extractor.project.helper.DisabledTest;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -11,7 +10,6 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -24,6 +22,7 @@ import static io.quarkus.test.extractor.project.helper.DisabledTest.isNotDisable
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.stream.Collectors.joining;
 
 public final class MavenUtils {
 
@@ -190,6 +189,21 @@ public final class MavenUtils {
                 });
                 pomContent = newPomContent.toString();
             }
+            if (!parentModule && pomContent.contains("docker-prune")) {
+                // TODO: drop this block when https://github.com/quarkusio/quarkus/pull/47239 gets merged
+                pomContent = pomContent
+                        .lines()
+                        .map(line -> {
+                            final String thisLine;
+                            if (line.trim().endsWith(".github/docker-prune.sh</executable>")) {
+                                thisLine = "                                    <executable>${docker-prune.location}</executable>";
+                            } else {
+                                thisLine = line;
+                            }
+                            return thisLine;
+                        })
+                        .collect(joining(System.lineSeparator()));
+            }
             Files.writeString(targetPom.toPath(), pomContent, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             throw new RuntimeException("Failed to remove Maven property placeholder from POM file", e);
@@ -260,10 +274,6 @@ public final class MavenUtils {
 
     public static boolean isPomPackageType(Dependency dep) {
         return POM.equalsIgnoreCase(dep.getType());
-    }
-
-    public static void copyDirectory(File sourceDirectory, File destinationDirectory) {
-        copyDirectory(sourceDirectory, destinationDirectory, false, null);
     }
 
     public static void copyDirectory(File sourceDirectory, File destinationDirectory, boolean containsDisabledTests,
