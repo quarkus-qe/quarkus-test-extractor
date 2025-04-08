@@ -152,12 +152,13 @@ final class ProjectWriterImpl implements ProjectWriter {
     }
 
     private static void copyTests(Project project) {
+        boolean containsDisabledTests = hasProjectDisabledTests(project.artifactId());
         Path sourceProjectSrcTestPath = project.projectPath().resolve("src").resolve("test");
         File sourceProjectSrcTestDir = sourceProjectSrcTestPath.toFile();
         Path targetProjectSrcTestPath = getTargetProjectDirPath(project).resolve("src").resolve("test");
         File targetProjectSrcTestDir = targetProjectSrcTestPath.toFile();
         targetProjectSrcTestDir.mkdirs();
-        copyDirectory(sourceProjectSrcTestDir, targetProjectSrcTestDir);
+        copyDirectory(sourceProjectSrcTestDir, targetProjectSrcTestDir, containsDisabledTests, project.artifactId());
     }
 
     private static void createMavenModule(Project project, Model testModel, Path testModelPath) {
