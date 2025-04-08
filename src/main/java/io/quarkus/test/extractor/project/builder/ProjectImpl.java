@@ -96,6 +96,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     correctGroupIdIfNecessary(dependency);
                     preparedDependencies.add(dependency);
                 });
+                preparedDependencies.removeIf(dep -> isQuarkusOwnDependency(dep, version()) && isPomPackageType(dep));
                 profile.setDependencies(preparedDependencies);
             }
             profile.setProperties(getProperties(profile.getProperties(), isTestModule()));
