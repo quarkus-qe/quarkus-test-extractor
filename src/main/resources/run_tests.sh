@@ -22,7 +22,7 @@ run_tests() {
       ADDITIONAL_ARGS+=' -Dintegration-tests-build'
   fi
 
-  if [[ "$NUMBER_OF_AXES_PER_CATEGORY" != *" -pl "* ]];then
+  if [[ "$OUTER_MVN_ADDITIONAL_ARGS" != *" -pl "* ]];then
     # determine which modules should be tested
     head -n -1 pom.xml > pom-wip
     echo "    <modules>" >> pom-wip
