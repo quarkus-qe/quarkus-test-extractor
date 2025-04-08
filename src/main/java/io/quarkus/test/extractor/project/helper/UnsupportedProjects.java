@@ -12,7 +12,9 @@ public class UnsupportedProjects {
     private static final Set<String> UNSUPPORTED_PROJECTS = Set.of(
             "integration-tests/kubernetes/maven-invoker-way",
             // following projects need more investigations before we start support them
-            "integration-tests/test-extension", "integration-tests/grpc-external-proto-test"
+            "integration-tests/test-extension", "integration-tests/grpc-external-proto-test",
+            // fails and gelf is not supported, so I did not investigate
+            "integration-tests/logging-gelf"
     );
 
     public static boolean isNotSupportedProject(Project project) {
