@@ -99,4 +99,8 @@ public final class PluginUtils {
     public static Path getTargetProjectDirPath(Project project) {
         return TARGET_DIR.resolve(project.targetRelativePath());
     }
+
+    public static boolean hasEmptyVersion(Dependency dependency) {
+        return dependency.getVersion() == null || dependency.getVersion().isEmpty();
+    }
 }

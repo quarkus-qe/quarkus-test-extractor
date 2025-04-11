@@ -38,15 +38,14 @@ public final class MavenUtils {
     public static final String QUARKUS_COMMUNITY_VERSION = "${community.quarkus.version}";
     public static final String USE_EXTRACTED_PROPERTIES = "USE-EXTRACTED-PROPERTIES";
     public static final String ANY = "*";
-    public static final String JAR = "jar";
+    public static final String JAR = "jar";    // like in ${project.version}
+    public static final String THIS_PROJECT_VERSION = "project.version";
     // used to avoid automatic substitution when we don't want it
     private static final String MAVEN_PROPERTY_PREFIX = "\\$" + USE_EXTRACTED_PROPERTIES + "\\{";
     private static final String PROPERTY_START = "\\${";
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
-    // like in ${project.version}
-    private static final String THIS_PROJECT_VERSION = "project.version";
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise

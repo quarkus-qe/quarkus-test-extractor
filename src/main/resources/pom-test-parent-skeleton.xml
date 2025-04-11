@@ -18,7 +18,7 @@
         <!-- which fails test that expect all the props to be recognized -->
         <community.quarkus.group-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</community.quarkus.group-id>
         <community.quarkus.artifact-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.artifact-id}</community.quarkus.artifact-id>
-        <community.quarkus.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</community.quarkus.version>
+        <community.quarkus.version>{{quarkus-project-version}}</community.quarkus.version>
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>

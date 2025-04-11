@@ -26,18 +26,13 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.quarkus.test.extractor.project.helper.KnownTestJars.setTestJarVersionIfNecessary;
 import static io.quarkus.test.extractor.project.helper.ProductizedNotManagedDependencies.isProductizedButNotManaged;
 import static io.quarkus.test.extractor.project.helper.QuarkusBom.isManagedByQuarkusBom;
 import static io.quarkus.test.extractor.project.helper.QuarkusTestFramework.isTestFrameworkDependency;
 import static io.quarkus.test.extractor.project.result.ParentProject.*;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.*;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.EXTENSIONS;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.INTEGRATION_TESTS;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.dropDeploymentPostfix;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isDeploymentArtifact;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionTestModule;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isExtensionsSupplementaryModule;
-import static io.quarkus.test.extractor.project.utils.PluginUtils.isQuarkusParentPomProject;
+import static io.quarkus.test.extractor.project.utils.PluginUtils.*;
 
 record ProjectImpl(MavenProject mavenProject, String relativePath, boolean extensionTestModule,
                    ExtractionSummary extractionSummary, String originalProjectName) implements Project {
@@ -93,6 +88,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                             resolveAndSetDependencyVersion(dependency);
                         }
                     }
+
+                    if (hasEmptyVersion(dependency) && isTestJar(dependency)) {
+                        setTestJarVersionIfNecessary(dependency);
+                    }
+
                     correctGroupIdIfNecessary(dependency);
                     preparedDependencies.add(dependency);
                 });
@@ -215,6 +215,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     }
                 }
 
+                if (hasEmptyVersion(dependency) && isTestJar(dependency)) {
+                    setTestJarVersionIfNecessary(dependency);
+                }
+
                 result.add(dependency);
             });
             result.forEach(ParentProject::correctGroupIdIfNecessary);
@@ -222,7 +226,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             var runtimeCounterparts = result.stream()
                     .filter(d -> !hasTestScope(d))
                     .filter(PluginUtils::isDeploymentArtifact)
-                    .filter(d2 -> !MavenUtils.isTestJar(d2))
+                    .filter(d2 -> !isTestJar(d2))
                     .filter(d2 -> !MavenUtils.isPomPackageType(d2))
                     .filter(d -> !d.getArtifactId().contains("-spi"))
                     // exception, this doesn't have nor need runtime counterpart
@@ -236,7 +240,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     .filter(d -> {
                         String runtimeArtifactId = d.getArtifactId();
                         return result.stream()
-                                .filter(d2 -> !MavenUtils.isTestJar(d2))
+                                .filter(d2 -> !isTestJar(d2))
                                 .filter(d2 -> !MavenUtils.isPomPackageType(d2))
                                 .noneMatch(d2 -> d2.getArtifactId().equalsIgnoreCase(runtimeArtifactId));
                     })
@@ -273,6 +277,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         setQuarkusPlatformVersion(dependency);
                     }
                 }
+
+                if (hasEmptyVersion(dependency) && isTestJar(dependency)) {
+                    setTestJarVersionIfNecessary(dependency);
+                }
+
                 result.add(dependency);
             });
             result.forEach(ParentProject::correctGroupIdIfNecessary);

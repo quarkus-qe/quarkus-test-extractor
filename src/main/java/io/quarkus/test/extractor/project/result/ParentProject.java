@@ -85,6 +85,7 @@ public final class ParentProject {
     public static void setQuarkusVersion(String version) {
         MAVEN_MODEL.setVersion(version);
         MAVEN_MODEL.getProperties().put("quarkus.platform.version", version);
+        MAVEN_MODEL.getProperties().put("community.quarkus.version", version);
     }
 
     public static void addProperties(Properties properties) {
