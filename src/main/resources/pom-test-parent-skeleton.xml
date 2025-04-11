@@ -9,6 +9,7 @@
     <description>Contains tests extracted from Quarkus main project</description>
 
     <properties>
+        <failsafe.argLine.additional></failsafe.argLine.additional>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>{{quarkus-project-version}}</quarkus.platform.version>
