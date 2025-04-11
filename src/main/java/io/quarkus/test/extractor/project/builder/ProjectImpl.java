@@ -90,7 +90,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     }
 
                     if (hasEmptyVersion(dependency) && isTestJar(dependency)) {
-                        setTestJarVersionIfNecessary(dependency);
+                        setTestJarVersionIfNecessary(dependency, mavenProject);
                     }
 
                     correctGroupIdIfNecessary(dependency);
@@ -216,7 +216,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 }
 
                 if (hasEmptyVersion(dependency) && isTestJar(dependency)) {
-                    setTestJarVersionIfNecessary(dependency);
+                    setTestJarVersionIfNecessary(dependency, mavenProject);
                 }
 
                 result.add(dependency);
@@ -279,7 +279,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 }
 
                 if (hasEmptyVersion(dependency) && isTestJar(dependency)) {
-                    setTestJarVersionIfNecessary(dependency);
+                    setTestJarVersionIfNecessary(dependency, mavenProject);
                 }
 
                 result.add(dependency);
