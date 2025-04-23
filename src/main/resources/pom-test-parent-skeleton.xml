@@ -236,6 +236,9 @@
                 <property>
                     <name>native</name>
                 </property>
+                <file>
+                    <missing>$USE-EXTRACTED-PROPERTIES{basedir}/disable-native-profile</missing>
+                </file>
             </activation>
             <properties>
                 <skipITs>false</skipITs>

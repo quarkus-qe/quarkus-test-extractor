@@ -29,8 +29,22 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-maven", createMavenItModuleCustomizer(),
                 "quarkus-integration-test-hibernate-reactive-panache-kotlin", removeQuarkusRestKotlinExtension(),
                 "quarkus-integration-test-class-transformer", addCreateExtRuntimePlugins(),
-                "quarkus-integration-test-class-transformer-deployment", addCreateExtDeploymentPlugins()
+                "quarkus-integration-test-class-transformer-deployment", addCreateExtDeploymentPlugins(),
+                // TODO: remove following line when 'https://github.com/quarkusio/quarkus/pull/47510' is backported
+                "quarkus-integration-test-bouncycastle-jsse", disableInNative()
         );
+    }
+
+    private static TestProjectCustomizer disableInNative() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                var disableNativeProfile = getTargetProjectDirPath(project).resolve("disable-native-profile");
+                if (!Files.exists(disableNativeProfile)) {
+                    FileSystemStorage.saveFileContent("disable-native-profile", "", true);
+                }
+            }
+        };
     }
 
     private static TestProjectCustomizer createMavenItModuleCustomizer() {
