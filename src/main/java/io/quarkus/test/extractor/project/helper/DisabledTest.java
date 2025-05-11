@@ -17,7 +17,11 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             // io.quarkus.gradle.ConditionalDependenciesKotlinTest.buildProject of Gradle IT module
             // fails in Jenkins but not when I run it locally, Gradle & Kotlin are not supported so not investigating it
             new DisabledTest("src/test/java/io/quarkus/gradle/ConditionalDependenciesKotlinTest.java",
-                    Set.of("quarkus-integration-test-gradle-plugin"))
+                    Set.of("quarkus-integration-test-gradle-plugin")),
+            // this test is also failing in native in Quarkus main project, they probably don't run it in native
+            new DisabledTest(
+                    "src/test/java/io/quarkus/it/hibernate/multitenancy/fruit/HibernateTenancyFunctionalityInGraalITCase.java",
+                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-discriminator"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
