@@ -28,7 +28,11 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             // I don't think they run this test in native in the Quarkus Main project, but it doesn't start for me
             // locally so it's hard to debug at all
             new DisabledTest("src/test/java/io/quarkus/it/keycloak/SmallRyeJwtOidcWebAppInGraalITCase.java",
-                    Set.of("quarkus-integration-test-smallrye-jwt-oidc-webapp"))
+                    Set.of("quarkus-integration-test-smallrye-jwt-oidc-webapp")),
+            // once more - this test doesn't start when I run it locally so it's hard to debug, but I can see it
+            // running as part of upstream native CI, so if DB2 reactive client is any concern, we should investigate
+            new DisabledTest("src/test/java/io/quarkus/it/reactive/db2/client/NativeQueryIT.java",
+                    Set.of("quarkus-integration-test-reactive-db2-client"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {

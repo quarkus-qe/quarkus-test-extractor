@@ -30,8 +30,9 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-hibernate-reactive-panache-kotlin", removeQuarkusRestKotlinExtension(),
                 "quarkus-integration-test-class-transformer", addCreateExtRuntimePlugins(),
                 "quarkus-integration-test-class-transformer-deployment", addCreateExtDeploymentPlugins(),
-                // TODO: remove following line when 'https://github.com/quarkusio/quarkus/pull/47510' is backported
-                "quarkus-integration-test-bouncycastle-jsse", disableInNative()
+                // they are expected to not work in native
+                "quarkus-integration-test-bouncycastle-jsse", disableInNative(),
+                "quarkus-integration-test-bouncycastle-fips-jsse", disableInNative()
         );
     }
 
@@ -43,6 +44,7 @@ public abstract class TestProjectCustomizer {
                 if (!Files.exists(disableNativeProfile)) {
                     FileSystemStorage.saveFileContent("disable-native-profile", "", true);
                 }
+                model.getProperties().put("quarkus.build.skip", "$USE-EXTRACTED-PROPERTIES{native}");
             }
         };
     }
