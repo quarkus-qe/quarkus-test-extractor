@@ -40,11 +40,11 @@ public abstract class TestProjectCustomizer {
         return new TestProjectCustomizer() {
             @Override
             protected void customize(Project project, Model model) {
+                model.getProperties().put("quarkus.build.skip", "$USE-EXTRACTED-PROPERTIES{quarkus.native.enabled}");
                 var disableNativeProfile = getTargetProjectDirPath(project).resolve("disable-native-profile");
                 if (!Files.exists(disableNativeProfile)) {
-                    FileSystemStorage.saveFileContent("disable-native-profile", "", true);
+                    FileSystemStorage.saveFileContent(disableNativeProfile.toString(), "", true);
                 }
-                model.getProperties().put("quarkus.build.skip", "$USE-EXTRACTED-PROPERTIES{quarkus.native.enabled}");
             }
         };
     }
