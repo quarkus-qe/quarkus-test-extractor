@@ -32,7 +32,15 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             // once more - this test doesn't start when I run it locally so it's hard to debug, but I can see it
             // running as part of upstream native CI, so if DB2 reactive client is any concern, we should investigate
             new DisabledTest("src/test/java/io/quarkus/it/reactive/db2/client/NativeQueryIT.java",
-                    Set.of("quarkus-integration-test-reactive-db2-client"))
+                    Set.of("quarkus-integration-test-reactive-db2-client")),
+            // following 2 Maven invoker native tests don't use (propagate) native image builder and fail over
+            // UBI8/UBI9 conflict (that "/lib64/libc.so.6: version `GLIBC_2.33' not found"), don't know why it doesn't
+            // fail upstream if they run it in native (which I tried to find but didn't), but it is sort of a problem
+            // that can solve itself when they migrate everything to UBI9
+            new DisabledTest("src/test/java/io/quarkus/maven/it/NativeImageIT.java",
+                    Set.of("quarkus-integration-test-maven")),
+            new DisabledTest("src/test/java/io/quarkus/maven/it/NativeAgentIT.java",
+                    Set.of("quarkus-integration-test-maven"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
