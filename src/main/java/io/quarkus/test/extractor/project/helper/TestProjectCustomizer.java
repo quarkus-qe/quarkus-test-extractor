@@ -44,7 +44,7 @@ public abstract class TestProjectCustomizer {
                 if (!Files.exists(disableNativeProfile)) {
                     FileSystemStorage.saveFileContent("disable-native-profile", "", true);
                 }
-                model.getProperties().put("quarkus.build.skip", "$USE-EXTRACTED-PROPERTIES{native}");
+                model.getProperties().put("quarkus.build.skip", "$USE-EXTRACTED-PROPERTIES{quarkus.native.enabled}");
             }
         };
     }

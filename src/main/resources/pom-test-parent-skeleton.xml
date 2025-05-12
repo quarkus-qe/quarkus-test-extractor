@@ -35,6 +35,7 @@
         <docker-prune.location>$USE-EXTRACTED-PROPERTIES{rootDir}prune-docker-containers</docker-prune.location>
         <!-- SELinux access label, used when mounting local volumes into containers in tests -->
         <volume.access.modifier>:Z</volume.access.modifier>
+        <quarkus.native.enabled>false</quarkus.native.enabled>
     </properties>
 
     <dependencyManagement>
