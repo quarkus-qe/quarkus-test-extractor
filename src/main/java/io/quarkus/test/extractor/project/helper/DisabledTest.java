@@ -40,7 +40,10 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             new DisabledTest("src/test/java/io/quarkus/maven/it/NativeImageIT.java",
                     Set.of("quarkus-integration-test-maven")),
             new DisabledTest("src/test/java/io/quarkus/maven/it/NativeAgentIT.java",
-                    Set.of("quarkus-integration-test-maven"))
+                    Set.of("quarkus-integration-test-maven")),
+            // this test uses @Inject with @QuarkusIntegrationTest so it could never work
+            new DisabledTest("src/test/java/org/acme/ClientCallingResourceIT.java",
+                    Set.of("quarkus-integration-test-smallrye-stork-registration"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
