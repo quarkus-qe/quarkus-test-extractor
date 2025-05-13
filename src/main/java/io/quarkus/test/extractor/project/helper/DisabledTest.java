@@ -19,9 +19,8 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             new DisabledTest("src/test/java/io/quarkus/gradle/ConditionalDependenciesKotlinTest.java",
                     Set.of("quarkus-integration-test-gradle-plugin")),
             // this test is also failing in native in Quarkus main project, they probably don't run it in native
-            new DisabledTest(
-                    "src/test/java/io/quarkus/it/hibernate/multitenancy/fruit/HibernateTenancyFunctionalityInGraalITCase.java",
-                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-discriminator")),
+            new DisabledTest("src/test/java/io/quarkus/it/hibernate/multitenancy/fruit/HibernateTenancyFunctionalityInGraalITCase.java",
+                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-discriminator", "quarkus-integration-test-hibernate-orm-tenancy")),
             // this test cannot be run in native at all because it uses @Inject with @QuarkusIntegrationTest...
             new DisabledTest("src/test/java/io/quarkus/it/opentelemetry/minimal/HelloServiceIT.java",
                     Set.of("quarkus-integration-test-opentelemetry-minimal")),
