@@ -2,15 +2,17 @@ package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
-import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.Plugin;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -22,7 +24,7 @@ public abstract class TestProjectCustomizer {
     private static final Map<String, TestProjectCustomizer> CUSTOMIZERS;
 
     static {
-        CUSTOMIZERS = Map.of("quarkus-websockets-next-deployment", createWebSocketsNextKotlinCustomizer(),
+        var customizers = new HashMap<>(Map.of("quarkus-websockets-next-deployment", createWebSocketsNextKotlinCustomizer(),
                 "quarkus-integration-test-devtools", createDevToolsItModuleCustomizer(),
                 "quarkus-integration-test-packaging", createPackagingItModuleCustomizer(),
                 "quarkus-integration-test-main", createMainItModuleCustomizer(),
@@ -33,7 +35,28 @@ public abstract class TestProjectCustomizer {
                 // they are expected to not work in native
                 "quarkus-integration-test-bouncycastle-jsse", disableInNative(),
                 "quarkus-integration-test-bouncycastle-fips-jsse", disableInNative()
-        );
+        ));
+
+        // we remove this property by default from all modules because it makes a mess depending on what Java
+        // was used for the extraction, but VT IT parent actually needs this
+        customizers.put("quarkus-virtual-threads-integration-tests-parent", setTargetJavaTo21InProfile());
+
+        CUSTOMIZERS = Collections.unmodifiableMap(customizers);
+    }
+
+    private static TestProjectCustomizer setTargetJavaTo21InProfile() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                var profile = model.getProfiles().stream().filter(p -> "run-virtual-thread-tests".equalsIgnoreCase(p.getId())).findFirst().orElseThrow();
+                var profileProperties = new Properties();
+                profileProperties.put("maven.compiler.release", "21");
+                if (profile.getProperties() != null) {
+                    profileProperties.putAll(profile.getProperties());
+                }
+                profile.setProperties(profileProperties);
+            }
+        };
     }
 
     private static TestProjectCustomizer disableInNative() {
