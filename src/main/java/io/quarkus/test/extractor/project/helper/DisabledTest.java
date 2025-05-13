@@ -42,7 +42,14 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
                     Set.of("quarkus-integration-test-maven")),
             // this test uses @Inject with @QuarkusIntegrationTest so it could never work
             new DisabledTest("src/test/java/org/acme/ClientCallingResourceIT.java",
-                    Set.of("quarkus-integration-test-smallrye-stork-registration"))
+                    Set.of("quarkus-integration-test-smallrye-stork-registration")),
+            // following 2 OTel ITs cannot pass in native as they change build-time property at runtime,
+            // the quarkus.otel.enabled configuration property, I think upstream doesn't run them in native,
+            // or I don't have explanation...
+            new DisabledTest("src/test/java/io/quarkus/it/opentelemetry/OpenTelemetryDisabledIT.java",
+                    Set.of("quarkus-integration-test-opentelemetry-quickstart")),
+            new DisabledTest("src/test/java/io/quarkus/it/opentelemetry/OpenTelemetryIT.java",
+                    Set.of("quarkus-integration-test-opentelemetry-quickstart"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
