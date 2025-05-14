@@ -26,8 +26,8 @@ import static java.util.stream.Collectors.joining;
 
 public final class MavenUtils {
 
-    private static final String QUARKUS_COMMUNITY_VERSION = "community.quarkus.version";
-    private static final String QUARKUS_PLATFORM_VERSION = "quarkus.platform.version";
+    public static final String QUARKUS_COMMUNITY_VERSION = "community.quarkus.version";
+    public static final String QUARKUS_PLATFORM_VERSION = "quarkus.platform.version";
     /**
      * Group id must not be io.quarkus as we need to keep modules artifact ids different from RHBQ bits we test.
      */
@@ -42,13 +42,13 @@ public final class MavenUtils {
     public static final String ANY = "*";
     public static final String JAR = "jar";    // like in ${project.version}
     public static final String THIS_PROJECT_VERSION = "project.version";
+    public static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor", "quarkus-test-grpc");
     // used to avoid automatic substitution when we don't want it
     private static final String MAVEN_PROPERTY_PREFIX = "\\$" + USE_EXTRACTED_PROPERTIES + "\\{";
     private static final String PROPERTY_START = "\\${";
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
-    private static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor", "quarkus-test-grpc");
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise

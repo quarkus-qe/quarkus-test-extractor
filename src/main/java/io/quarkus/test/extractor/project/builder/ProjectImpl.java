@@ -485,6 +485,9 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
         } else if (actualDependencyVersion.equalsIgnoreCase(version())) {
             setQuarkusCommunityVersion(dependency);
             extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
+        } else if (COMMUNITY_DEPENDENCIES.contains(dependency.getArtifactId())) {
+            setQuarkusCommunityVersion(dependency);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
         } else {
             dependency.setVersion(actualDependencyVersion);
             extractionSummary.addNotManagedDependency(dependency, this);
