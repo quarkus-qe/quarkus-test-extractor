@@ -26,7 +26,7 @@ run_tests() {
     # determine which modules should be tested
     head -n -1 pom.xml > pom-wip
     echo "    <modules>" >> pom-wip
-    local TOTAL_NUMBER_OF_MODULES=$(ls -l $MODULE_DIR_NAME | grep -c ^d)
+    local TOTAL_NUMBER_OF_MODULES=$(ls -d $MODULE_DIR_NAME/*/* | grep pom.xml | wc -l)
     (( REMAINDER=TOTAL_NUMBER_OF_MODULES%NUMBER_OF_AXES_PER_CATEGORY, NUMBER_OF_MODULES_PER_GROUP=TOTAL_NUMBER_OF_MODULES/NUMBER_OF_AXES_PER_CATEGORY ))
     echo "Total number of $MODULE_DIR_NAME modules is $TOTAL_NUMBER_OF_MODULES and there is $NUMBER_OF_AXES_PER_CATEGORY module groups"
     local NUMBER_OF_MODULES_IN_GROUP=-1
