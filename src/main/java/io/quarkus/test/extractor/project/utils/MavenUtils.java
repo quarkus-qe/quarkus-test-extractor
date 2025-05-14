@@ -26,6 +26,8 @@ import static java.util.stream.Collectors.joining;
 
 public final class MavenUtils {
 
+    private static final String QUARKUS_COMMUNITY_VERSION = "community.quarkus.version";
+    private static final String QUARKUS_PLATFORM_VERSION = "quarkus.platform.version";
     /**
      * Group id must not be io.quarkus as we need to keep modules artifact ids different from RHBQ bits we test.
      */
@@ -34,8 +36,8 @@ public final class MavenUtils {
     public static final String POM_XML = "pom.xml";
     public static final String TEST_SCOPE = "test";
     public static final String COMPILE_SCOPE = "compile";
-    public static final String QUARKUS_PLATFORM_VERSION = "${quarkus.platform.version}";
-    public static final String QUARKUS_COMMUNITY_VERSION = "${community.quarkus.version}";
+    public static final String QUARKUS_PLATFORM_VERSION_REF = "${" + QUARKUS_PLATFORM_VERSION + "}";
+    public static final String QUARKUS_COMMUNITY_VERSION_REF = "${" + QUARKUS_COMMUNITY_VERSION + "}";
     public static final String USE_EXTRACTED_PROPERTIES = "USE-EXTRACTED-PROPERTIES";
     public static final String ANY = "*";
     public static final String JAR = "jar";    // like in ${project.version}
@@ -46,6 +48,7 @@ public final class MavenUtils {
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
+    private static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor");
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise
@@ -181,7 +184,12 @@ public final class MavenUtils {
                         // basically, if we manage this dependency, we want it to have our project version
                         thisLine = line;
                     } else {
-                        thisLine = line.replaceAll(THIS_PROJECT_VERSION, "quarkus.platform.version");
+                        String previousLineString = previousLine.get();
+                        if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLineString::contains)) {
+                            thisLine = line.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
+                        } else {
+                            thisLine = line.replaceAll(THIS_PROJECT_VERSION, QUARKUS_PLATFORM_VERSION);
+                        }
                     }
                     previousLine.set(thisLine);
                     newPomContent.append(thisLine).append(System.lineSeparator());
@@ -242,11 +250,11 @@ public final class MavenUtils {
     }
 
     public static void setQuarkusPlatformVersion(Dependency dependency) {
-        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
+        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
     }
 
     public static void setQuarkusCommunityVersion(Dependency dependency) {
-        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{community.quarkus.version}");
+        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_COMMUNITY_VERSION + "}");
     }
 
     public static String computeRelativePath(Project project) {

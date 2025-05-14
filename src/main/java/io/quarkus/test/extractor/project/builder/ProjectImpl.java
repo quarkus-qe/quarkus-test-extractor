@@ -203,7 +203,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         // so let's just use Quarkus Platform version because that should fit
                         // also, test-jars are not productized
                         setQuarkusPlatformVersion(dependency);
-                        extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+                        extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
                     } else if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
                     }
@@ -475,16 +475,16 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
         if (isTestFrameworkDependency(dependency)) {
             // some test framework dependencies are not managed by Quarkus BOM
             setQuarkusCommunityVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
         } else if (isProductizedButNotManaged(dependency)) {
             setQuarkusPlatformVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
         } else if (actualDependencyVersion == null) {
             setQuarkusPlatformVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
         } else if (actualDependencyVersion.equalsIgnoreCase(version())) {
             setQuarkusCommunityVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
         } else {
             dependency.setVersion(actualDependencyVersion);
             extractionSummary.addNotManagedDependency(dependency, this);
