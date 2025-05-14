@@ -48,7 +48,7 @@ public final class MavenUtils {
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
-    private static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor");
+    private static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor", "quarkus-test-grpc");
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise
