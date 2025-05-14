@@ -2,6 +2,7 @@ package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
+import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 
@@ -16,6 +17,8 @@ import java.util.Properties;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_GROUP_ID;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.getTargetProjectDirPath;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
@@ -90,10 +93,10 @@ public abstract class TestProjectCustomizer {
                 // Failed to resolve io.quarkus:quarkus-bom-quarkus-platform-descriptor:3.20.0:json:3.20.0
                 model.setDependencies(new ArrayList<>(model.getDependencies()));
                 var dependency = new Dependency();
-                dependency.setGroupId("$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}");
+                dependency.setGroupId("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_GROUP_ID + "}");
                 dependency.setArtifactId("quarkus-bom-quarkus-platform-descriptor");
-                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
-                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}");
+                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
+                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
                 dependency.setType("json");
                 model.addDependency(dependency);
             }
@@ -180,8 +183,8 @@ public abstract class TestProjectCustomizer {
                 // required fix for io.quarkus.devtools.commands.CreateProjectPlatformMetadataTest
                 var fileChanger = new FileChanger(project, "src/test/resources/platform-metadata.json");
                 fileChanger.changeContent(fileContent -> fileContent
-                        .replaceAll(Pattern.quote("{project.version}"), "{quarkus.platform.version}")
-                        .replaceAll(Pattern.quote("{project.groupId}"), "{quarkus.platform.group-id}"));
+                        .replaceAll(Pattern.quote("{project.version}"), "{" + QUARKUS_PLATFORM_VERSION + "}")
+                        .replaceAll(Pattern.quote("{project.groupId}"), "{" + QUARKUS_PLATFORM_GROUP_ID + "}"));
             }
         };
     }

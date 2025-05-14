@@ -79,6 +79,10 @@ public final class PluginUtils {
         }
     }
 
+    public static boolean isIoQuarkusMavenPlugin(String artifactId, String groupId) {
+        return "quarkus-maven-plugin".equalsIgnoreCase(artifactId) && "io.quarkus".equals(groupId);
+    }
+
     public static String prefixWithTests(String artifactId) {
         return TESTS_PREFIX + artifactId;
     }

@@ -16,7 +16,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import static io.quarkus.test.extractor.project.helper.DisabledTest.isNotDisabledTest;
 import static io.quarkus.test.extractor.project.result.ParentProject.isManagedByTestParent;
@@ -28,6 +28,7 @@ public final class MavenUtils {
 
     public static final String QUARKUS_COMMUNITY_VERSION = "community.quarkus.version";
     public static final String QUARKUS_PLATFORM_VERSION = "quarkus.platform.version";
+    public static final String QUARKUS_PLATFORM_GROUP_ID = "quarkus.platform.group-id";
     /**
      * Group id must not be io.quarkus as we need to keep modules artifact ids different from RHBQ bits we test.
      */
@@ -106,7 +107,7 @@ public final class MavenUtils {
 
     private static void writeMavenModel(Model model, Path targetDir, boolean parentModule) {
         writeMavenModel(model, getPomFile(targetDir));
-        replacePomPlaceholders(targetDir, parentModule);
+        finalizePom(targetDir, parentModule);
     }
 
     public static boolean isTestModuleProperty(String propertyName, String propertyValue) {
@@ -140,8 +141,8 @@ public final class MavenUtils {
         }
     }
 
-    private static void replacePomPlaceholders(Path targetDir, boolean parentModule) {
-        replacePomPlaceholders(getPomFile(targetDir), parentModule);
+    private static void finalizePom(Path targetDir, boolean parentModule) {
+        finalizePom(getPomFile(targetDir), parentModule);
     }
 
     private static Model getMavenModel(InputStream is) {
@@ -169,32 +170,36 @@ public final class MavenUtils {
         }
     }
 
-    private static void replacePomPlaceholders(File targetPom, boolean parentModule) {
+    private static void finalizePom(File targetPom, boolean parentModule) {
         try {
             String pomContent = Files.readString(targetPom.toPath());
             pomContent = pomContent.replaceAll(MAVEN_PROPERTY_PREFIX, PROPERTY_START);
             if (!parentModule && pomContent.contains(THIS_PROJECT_VERSION)) {
                 // this is "fallback" that exists mostly because plugin configurations doesn't have unified XML schema
                 // that we could use, so when there is "${project.version}", we didn't detect that before
-                StringBuilder newPomContent = new StringBuilder();
-                AtomicReference<String> previousLine = new AtomicReference<>("");
-                pomContent.lines().forEachOrdered(line -> {
+                var newPomLines = pomContent.lines().toArray(String[]::new);
+                for (int i = 0; i < newPomLines.length; i++) {
+                    String previousLine = i == 0 ? "" : newPomLines[i - 1];
+                    String originalLine = newPomLines[i];
                     final String thisLine;
-                    if (isManagedByTestParent(toDependency(previousLine.get()))) {
+                    if (isIoQuarkusMavenPlugin(toDependency(originalLine, previousLine))) {
+                        // this should be unnecessary, it is the last resort just in case replacement wasn't done sooner
+                        thisLine = originalLine;
+                        // this allows to use productized version of Quarkus Maven plugin
+                        newPomLines[i - 1] = previousLine.replaceAll("io\\.quarkus", "\\${" + QUARKUS_PLATFORM_GROUP_ID + "}");
+                    } else if (isManagedByTestParent(toDependency(previousLine))) {
                         // basically, if we manage this dependency, we want it to have our project version
-                        thisLine = line;
+                        thisLine = originalLine;
                     } else {
-                        String previousLineString = previousLine.get();
-                        if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLineString::contains)) {
-                            thisLine = line.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
+                        if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLine::contains)) {
+                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
                         } else {
-                            thisLine = line.replaceAll(THIS_PROJECT_VERSION, QUARKUS_PLATFORM_VERSION);
+                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_PLATFORM_VERSION);
                         }
                     }
-                    previousLine.set(thisLine);
-                    newPomContent.append(thisLine).append(System.lineSeparator());
-                });
-                pomContent = newPomContent.toString();
+                    newPomLines[i] = thisLine;
+                }
+                pomContent = String.join(System.lineSeparator(), newPomLines);
             }
             if (!parentModule && pomContent.contains("docker-prune")) {
                 // TODO: drop this block when https://github.com/quarkusio/quarkus/pull/47239 gets merged
@@ -217,7 +222,15 @@ public final class MavenUtils {
         }
     }
 
+    private static boolean isIoQuarkusMavenPlugin(Dependency dependency) {
+        return dependency != null && PluginUtils.isIoQuarkusMavenPlugin(dependency.getArtifactId(), dependency.getGroupId());
+    }
+
     private static Dependency toDependency(String line) {
+        return toDependency(line, null);
+    }
+
+    private static Dependency toDependency(String line, String previousLine) {
         if (line == null || !line.contains("<artifactId>")) {
             return null;
         }
@@ -226,11 +239,17 @@ public final class MavenUtils {
         String artifactId = restOfArtifactId.substring(0, restOfArtifactId.indexOf("<"));
         var dep = new Dependency();
         dep.setArtifactId(artifactId);
+        if (previousLine != null && previousLine.contains("<groupId>")) {
+            previousLine = previousLine.trim();
+            String restOfGroupId = previousLine.substring("<groupId>".length());
+            String groupId = restOfGroupId.substring(0, restOfGroupId.indexOf("<"));
+            dep.setGroupId(groupId);
+        }
         return dep;
     }
 
     public static String getThisProjectVersion() {
-        return "$USE-EXTRACTED-PROPERTIES{" + THIS_PROJECT_VERSION + "}";
+        return "$" + USE_EXTRACTED_PROPERTIES + "{" + THIS_PROJECT_VERSION + "}";
     }
 
     public static String getManagementKey(Dependency dependency) {
@@ -250,11 +269,11 @@ public final class MavenUtils {
     }
 
     public static void setQuarkusPlatformVersion(Dependency dependency) {
-        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
+        dependency.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_VERSION + "}");
     }
 
     public static void setQuarkusCommunityVersion(Dependency dependency) {
-        dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_COMMUNITY_VERSION + "}");
+        dependency.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_COMMUNITY_VERSION + "}");
     }
 
     public static String computeRelativePath(Project project) {

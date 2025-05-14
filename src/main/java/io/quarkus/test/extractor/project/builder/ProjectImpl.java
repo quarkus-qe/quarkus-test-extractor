@@ -86,6 +86,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)
                                 && notAccompaniedWithDeploymentDep(dependency)) {
                             resolveAndSetDependencyVersion(dependency);
+                        } else if (isManagedByQuarkusBomButNotProductPlatformBom(dependency)) {
+                            setResolvedDependencyVersion(dependency);
                         }
                     }
 
@@ -103,6 +105,12 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             profiles.add(profile);
         });
         return List.copyOf(profiles);
+    }
+
+    private void setResolvedDependencyVersion(Dependency dependency) {
+        String actualDependencyVersion = findDependencyVersion(dependency);
+        dependency.setVersion(actualDependencyVersion);
+        extractionSummary.addNotManagedDependency(dependency, this);
     }
 
     @Override
@@ -206,6 +214,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
                     } else if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
+                    } else if (isManagedByQuarkusBomButNotProductPlatformBom(dependency)) {
+                        setResolvedDependencyVersion(dependency);
                     }
                 }
                 if (hasThisProjectVersion(dependency)) {
@@ -269,6 +279,8 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)
                             && notAccompaniedWithDeploymentDep(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
+                    } else if (isManagedByQuarkusBomButNotProductPlatformBom(dependency)) {
+                        setResolvedDependencyVersion(dependency);
                     }
                 }
                 if (hasThisProjectVersion(dependency)) {
@@ -531,9 +543,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                             var pluginExecution = plugin.getExecutions().get(0);
                             return "default-compile".equalsIgnoreCase(pluginExecution.getId());
                         }
-                        // TODO: drop 'quarkus-extension-processor' if present
                     }
-                    // FIXME: drop "project.version" from extension processor
                 }
                 return false;
             });
@@ -557,6 +567,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                             pluginVersion = findResolvedPluginVersion(plugin, buildPlugins, pluginManagement);
                         }
                         plugin.setVersion(pluginVersion);
+                    }
+                    if (PluginUtils.isIoQuarkusMavenPlugin(plugin.getArtifactId(), plugin.getGroupId())) {
+                        // RHBQ uses productized plugin and the group id is 'com.redhat.quarkus.platform'
+                        // so make the group id configurable
+                        plugin.setGroupId("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_GROUP_ID + "}");
                     }
                     extractionSummary.addBuildPlugin(plugin, project);
                 });
@@ -616,5 +631,12 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             properties.putAll(mavenProjectProperties);
         }
         return properties;
+    }
+
+    private static boolean isManagedByQuarkusBomButNotProductPlatformBom(Dependency dependency) {
+        // ATM org.bouncycastle:bctls-jdk18on is only used by ITs and in docs, so this BC dependency is not productized
+        // and not managed by product platform BOM
+        return "org.bouncycastle".equalsIgnoreCase(dependency.getGroupId())
+                && "bctls-jdk18on".equalsIgnoreCase(dependency.getArtifactId());
     }
 }
