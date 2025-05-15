@@ -57,6 +57,7 @@ final class ProjectWriterImpl implements ProjectWriter {
 
         if (isLastModule(project.artifactId())) {
             ParentProject.writeTo(TARGET_DIR);
+            correctVersionResolutionForForcedDeps(TARGET_DIR, extractionSummary);
             extractionSummary.createAndStoreFinalSummary();
             addTestExecutionBashLibrary();
             createPruneDockerContainersFileInProjectRootDir();

@@ -37,7 +37,8 @@ public record ExtractionSummary(String projectArtifactId,
                                 Map<RepositoryKey, Set<Usage>> projectSpecificRepositories,
                                 Map<RepositoryKey, Set<Usage>> projectSpecificPluginRepositories,
                                 Map<ProjectSpecificPlugin, Set<Usage>> projectSpecificPlugins,
-                                Set<DependencyManagementKey> projectSpecificDependencyManagements)
+                                Set<DependencyManagementKey> projectSpecificDependencyManagements,
+                                Set<TestClassWithForcedDependencyKey> testClassWithForcedDependencyKeys)
         implements Serializable {
 
     record ProjectSpecificPlugin(String pluginName, String pluginVersion) implements Serializable {}
@@ -46,12 +47,17 @@ public record ExtractionSummary(String projectArtifactId,
     record RepositoryKey(String name, String id, String url) implements Serializable {}
     record Usage(String projectId, String relativePath) implements Serializable {}
     record DependencyManagementKey(Set<String> managementKeys, Usage usage) implements Serializable {}
+    record TestClassWithForcedDependencyKey(Path testClassPath) implements Serializable {}
 
     private static final String PARTIAL_EXTRACTION_SUMMARIES_DIR_NAME = "partial-extraction-summaries";
     private static final String EXTRACTION_SUMMARY_FILE_NAME = "extraction-summary";
 
     private ExtractionSummary(String projectArtifactId) {
-        this(projectArtifactId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>());
+        this(projectArtifactId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>());
+    }
+
+    public void addTestClassWithForcedDep(Path testClassPath) {
+        testClassWithForcedDependencyKeys.add(new TestClassWithForcedDependencyKey(testClassPath));
     }
 
     public static ExtractionSummary of(String projectArtifactId) {
@@ -156,6 +162,13 @@ public record ExtractionSummary(String projectArtifactId,
         if (projectsWithOwnDepManagement.isEmpty()) {
             projectsWithOwnDepManagement = "none found";
         }
+        String classesWithForcedDeps = testClassWithForcedDependencyKeys
+                .stream()
+                .map(k -> "- " + k.testClassPath.toString())
+                .collect(Collectors.joining(System.lineSeparator()));
+        if (classesWithForcedDeps.isEmpty()) {
+            classesWithForcedDeps = "none found";
+        }
         return """
                 Test extraction summary:
                 
@@ -171,13 +184,16 @@ public record ExtractionSummary(String projectArtifactId,
                 === Projects that have their own dependency managements
                 %s
                 
+                === Test classes with forced dependencies (important because we do some imperfect string manipulations to correct used version)
+                %s
+                
                 === Leaving aside SureFire and Failsafe plugins, following projects contains their own build plugins
                     (please note there probably nothing wrong about that, just revise their setup like
                      version or properties in relation to RHBQ, if not relevant, ignore them;
                      many plugins are specified in profiles and these are not listed here):
                 %s
                 """.formatted(unmanagedDependencies, projectRepositories, projectPluginRepositories,
-                projectsWithOwnDepManagement, projectBuildPlugins);
+                projectsWithOwnDepManagement, classesWithForcedDeps, projectBuildPlugins);
     }
 
     private static void storePartialSummaryToFileSystem(String projectArtifactId, ExtractionSummary summary) {
@@ -292,14 +308,17 @@ public record ExtractionSummary(String projectArtifactId,
         Map<RepositoryKey, Set<Usage>> projectSpecificPluginRepositories = new HashMap<>();
         Map<ProjectSpecificPlugin, Set<Usage>> projectSpecificPlugins = new HashMap<>();
         Set<DependencyManagementKey> projectSpecificDependencyManagements = new HashSet<>();
+        Set<TestClassWithForcedDependencyKey> forcedDependencyKeys = new HashSet<>();
         listPartialExtractionSummaries().map(ExtractionSummary::loadPartialSummary).forEach(summary -> {
             unmanagedDependencies.putAll(summary.unmanagedDependencies);
             projectSpecificRepositories.putAll(summary.projectSpecificRepositories);
             projectSpecificPluginRepositories.putAll(summary.projectSpecificPluginRepositories);
             projectSpecificPlugins.putAll(summary.projectSpecificPlugins);
             projectSpecificDependencyManagements.addAll(summary.projectSpecificDependencyManagements);
+            forcedDependencyKeys.addAll(summary.testClassWithForcedDependencyKeys);
         });
         return new ExtractionSummary(projectArtifactId, unmanagedDependencies, projectSpecificRepositories,
-                projectSpecificPluginRepositories, projectSpecificPlugins, projectSpecificDependencyManagements);
+                projectSpecificPluginRepositories, projectSpecificPlugins, projectSpecificDependencyManagements,
+                forcedDependencyKeys);
     }
 }

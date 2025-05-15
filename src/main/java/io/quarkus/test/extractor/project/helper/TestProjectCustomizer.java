@@ -189,25 +189,6 @@ public abstract class TestProjectCustomizer {
         };
     }
 
-    private record FileChanger(Project project, String filePath) {
-
-        private void changeContent(Function<String, String> replacement) {
-            // this is the right way to get path for ITs, I didn't try it for extension modules
-            var absolutePath = getTargetProjectDirPath(project).resolve(filePath);
-            if (Files.exists(absolutePath)) {
-                try {
-                    String testContent = Files.readString(absolutePath);
-                    Files.writeString(absolutePath, replacement.apply(testContent), TRUNCATE_EXISTING);
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to adjust file " + absolutePath, e);
-                }
-            } else {
-                // this is not super important, but we should at least warn
-                System.err.println("Failed to find file " + absolutePath + " which means implementation has changed");
-            }
-        }
-    }
-
     /**
      * This works around of what is most likely flakiness (bug) in Quarkus, it removes Quarkus REST Kotlin extension
      * so that only transitive Quarkus Kotlin extension exists hopefully this will help with following error:

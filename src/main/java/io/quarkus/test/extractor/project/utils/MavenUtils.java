@@ -1,6 +1,8 @@
 package io.quarkus.test.extractor.project.utils;
 
 import io.quarkus.test.extractor.project.builder.Project;
+import io.quarkus.test.extractor.project.helper.ExtractionSummary;
+import io.quarkus.test.extractor.project.helper.FileChanger;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -10,12 +12,15 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 
 import java.io.*;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static io.quarkus.test.extractor.project.helper.DisabledTest.isNotDisabledTest;
@@ -50,6 +55,7 @@ public final class MavenUtils {
     private static final Set<String> IGNORED_PROPERTIES;
     private static final String TEST_JAR = "test-jar";
     private static final String CENTRAL_REPOSITORY_ID = "central";
+    private static final String GET_VERSION = "Version.getVersion()";
 
     static {
         // Maven properties we don't really need to propagate as they generate unnecessary noise
@@ -357,5 +363,53 @@ public final class MavenUtils {
                 .stream()
                 .filter(p -> x.equalsIgnoreCase(p.getId()))
                 .findFirst();
+    }
+
+    public static void correctVersionResolutionForForcedDeps(Path targetDir, ExtractionSummary extractionSummary) {
+        // 'io.quarkus.builder.Version#getVersion' used in 'io.quarkus.test.QuarkusProdModeTest#setForcedDependencies'
+        // and 'io.quarkus.test.QuarkusUnitTest#setForcedDependencies' provides incorrect values for RHBQ
+        // because we need to use actual dependency version and not the platform BOM version
+        // in most cases using core Quarkus BOM should do the trick, once you run into situation when it doesn't,
+        // good luck fixing it
+        final Consumer<Path> getVersionSubstitution = path -> FileChanger.changeContent(classContent -> classContent
+                .replaceAll(Pattern.quote(GET_VERSION), "System.getProperty(\"core.quarkus.version\")"), path);
+        try(var files = Files.walk(targetDir, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)) {
+            files
+                .filter(Files::isRegularFile)
+                .filter(p -> p.toString().endsWith("Test.java") || p.toString().endsWith("TestCase.java"))
+                .filter(anyLineMatches(l -> l.contains("import io.quarkus.test.QuarkusUnitTest;")
+                        || l.contains("import io.quarkus.test.QuarkusProdModeTest;")))
+                // this doesn't handle static 'version' method import, so far no-one had the great idea to do that
+                // once they do, tests will start failing, and you can fix it...
+                .filter(anyLineMatches(l -> l.contains("import io.quarkus.builder.Version;")))
+                .filter(anyLineMatches(l -> l.contains("setForcedDependencies")))
+                .peek(extractionSummary::addTestClassWithForcedDep)
+                .map(p -> {
+                    boolean ifKnownFormOfGettingVersionFound = anyLineMatches(l -> l.contains(GET_VERSION)).test(p);
+                    if (ifKnownFormOfGettingVersionFound) {
+                        return p;
+                    }
+                    throw new RuntimeException("""
+                            Test class '%s' forces dependencies but does not contain string %s.
+                            This can mean multiple things, like static method import was used, unused import, or the method
+                            invocation is split among more than one lines, however you will need to look into
+                            how the class looks like and implement substitution so that we can resolve the dependency
+                            version based on artifacts we run this test with.
+                            """.formatted(p, GET_VERSION));
+                })
+                .forEach(getVersionSubstitution);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to correct resolved version for forced dependencies", e);
+        }
+    }
+
+    private static Predicate<Path> anyLineMatches(Predicate<String> predicate) {
+        return p -> {
+            try (var linesStream = Files.lines(p)) {
+                return linesStream.anyMatch(predicate);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 }

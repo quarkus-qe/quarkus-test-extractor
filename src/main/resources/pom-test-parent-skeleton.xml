@@ -19,6 +19,12 @@
         <community.quarkus.group-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</community.quarkus.group-id>
         <community.quarkus.artifact-id>$USE-EXTRACTED-PROPERTIES{quarkus.platform.artifact-id}</community.quarkus.artifact-id>
         <community.quarkus.version>{{quarkus-project-version}}</community.quarkus.version>
+        <!-- the '<version>' part of the 'io.quarkus:quarkus-bom:<version>' expression -->
+        <!-- this core Quarkus BOM version is productized in the RHBQ -->
+        <!-- for now, we use it to replace "io.quarkus.builder.Version.getVersion()" invocations for forced dependencies -->
+        <!-- because for such programmatically set via 'io.quarkus.test.QuarkusUnitTest#setForcedDependencies' -->
+        <!-- we can't rely on the Maven resolve that uses BOM; and yes, in some cases this trick won't be enough -->
+        <core.quarkus.version>$USE-EXTRACTED-PROPERTIES{community.quarkus.version}</core.quarkus.version>
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>
@@ -274,6 +280,7 @@
                         <!-- this is intended mainly for devtools IT module that parse BOM version and group id from these props -->
                         <project.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</project.version>
                         <project.groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</project.groupId>
+                        <core.quarkus.version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</core.quarkus.version>
                     </systemPropertyVariables>
                     <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                 </configuration>
