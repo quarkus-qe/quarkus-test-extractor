@@ -281,6 +281,7 @@
                         <project.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</project.version>
                         <project.groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</project.groupId>
                         <core.quarkus.version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</core.quarkus.version>
+                        <community.quarkus.version>$USE-EXTRACTED-PROPERTIES{community.quarkus.version}</community.quarkus.version>
                     </systemPropertyVariables>
                     <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>
                 </configuration>

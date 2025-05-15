@@ -371,8 +371,15 @@ public final class MavenUtils {
         // because we need to use actual dependency version and not the platform BOM version
         // in most cases using core Quarkus BOM should do the trick, once you run into situation when it doesn't,
         // good luck fixing it
-        final Consumer<Path> getVersionSubstitution = path -> FileChanger.changeContent(classContent -> classContent
-                .replaceAll(Pattern.quote(GET_VERSION), "System.getProperty(\"core.quarkus.version\")"), path);
+        final Consumer<Path> getVersionSubstitution = path -> FileChanger.changeContent(classContent -> {
+            if (classContent.contains("quarkus-jdbc-h2")) {
+                // TODO: drop this workaround when https://issues.redhat.com/browse/QUARKUS-6054 is fixed
+                return classContent
+                        .replaceAll(Pattern.quote(GET_VERSION), "System.getProperty(\"community.quarkus.version\")");
+            }
+            return classContent
+                    .replaceAll(Pattern.quote(GET_VERSION), "System.getProperty(\"core.quarkus.version\")");
+        }, path);
         try(var files = Files.walk(targetDir, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)) {
             files
                 .filter(Files::isRegularFile)
