@@ -170,7 +170,7 @@
                 <plugins>
                     <!-- here so that IT test extensions like 'class-transformer' works -->
                     <plugin>
-                        <groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</groupId>
+                        <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-extension-maven-plugin</artifactId>
                         <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
                         <executions>
