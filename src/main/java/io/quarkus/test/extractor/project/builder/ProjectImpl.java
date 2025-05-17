@@ -195,7 +195,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             if (!isManagedByQuarkusBom(self)) {
                 // ATM at the very least 'quarkus-observability-devservices-deployment' is not managed in '-deployment'
                 // module, and it doesn't seem to be an issue, so not a bug
-                setQuarkusPlatformVersion(self);
+                setQuarkusCoreBomVersion(self);
             }
             result.add(self);
             mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
@@ -221,7 +221,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 if (hasThisProjectVersion(dependency)) {
                     dependency.setVersion(null);
                     if (!isManagedByQuarkusBom(dependency)) {
-                        setQuarkusPlatformVersion(dependency);
+                        setQuarkusCoreBomVersion(dependency);
                     }
                 }
 
@@ -286,7 +286,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 if (hasThisProjectVersion(dependency)) {
                     dependency.setVersion(null);
                     if (!isManagedByQuarkusBom(dependency)) {
-                        setQuarkusPlatformVersion(dependency);
+                        setQuarkusCoreBomVersion(dependency);
                     }
                 }
 
@@ -489,11 +489,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             setQuarkusCommunityVersion(dependency);
             extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
         } else if (isProductizedButNotManaged(dependency)) {
-            setQuarkusPlatformVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
+            setQuarkusCoreBomVersion(dependency);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_CORE_BOM_VERSION_REF);
         } else if (actualDependencyVersion == null) {
-            setQuarkusPlatformVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
+            setQuarkusCoreBomVersion(dependency);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_CORE_BOM_VERSION_REF);
         } else if (actualDependencyVersion.equalsIgnoreCase(version())) {
             setQuarkusCommunityVersion(dependency);
             extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);

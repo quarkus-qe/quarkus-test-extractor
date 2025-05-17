@@ -24,7 +24,7 @@
         <!-- for now, we use it to replace "io.quarkus.builder.Version.getVersion()" invocations for forced dependencies -->
         <!-- because for such programmatically set via 'io.quarkus.test.QuarkusUnitTest#setForcedDependencies' -->
         <!-- we can't rely on the Maven resolve that uses BOM; and yes, in some cases this trick won't be enough -->
-        <core.quarkus.version>$USE-EXTRACTED-PROPERTIES{community.quarkus.version}</core.quarkus.version>
+        <core.quarkus.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</core.quarkus.version>
         <!-- our executors supports linux containers, therefore activate test profiles that require them -->
         <test-containers>true</test-containers>
         <start-containers>true</start-containers>
@@ -172,7 +172,7 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-extension-maven-plugin</artifactId>
-                        <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                        <version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -192,7 +192,7 @@
                                 <path>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                                    <version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>
@@ -219,7 +219,7 @@
                                 <path>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</version>
+                                    <version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>
@@ -278,7 +278,7 @@
                         <!-- but without this, our tests create temp dir in /tmp; you can drop next line if it starts passing -->
                         <project.build.directory>$USE-EXTRACTED-PROPERTIES{project.basedir}/target</project.build.directory>
                         <!-- this is intended mainly for devtools IT module that parse BOM version and group id from these props -->
-                        <project.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</project.version>
+                        <project.version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</project.version>
                         <project.groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</project.groupId>
                         <core.quarkus.version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</core.quarkus.version>
                         <community.quarkus.version>$USE-EXTRACTED-PROPERTIES{community.quarkus.version}</community.quarkus.version>
@@ -302,7 +302,7 @@
                         <native.image.path>$USE-EXTRACTED-PROPERTIES{project.build.directory}/$USE-EXTRACTED-PROPERTIES{project.build.finalName}-runner</native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>$USE-EXTRACTED-PROPERTIES{maven.home}</maven.home>
-                        <project.version>$USE-EXTRACTED-PROPERTIES{quarkus.platform.version}</project.version>
+                        <project.version>$USE-EXTRACTED-PROPERTIES{core.quarkus.version}</project.version>
                         <project.groupId>$USE-EXTRACTED-PROPERTIES{quarkus.platform.group-id}</project.groupId>
                     </systemPropertyVariables>
                     <rerunFailingTestsCount>${reruns}</rerunFailingTestsCount>

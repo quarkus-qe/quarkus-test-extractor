@@ -32,6 +32,7 @@ import static java.util.stream.Collectors.joining;
 public final class MavenUtils {
 
     public static final String QUARKUS_COMMUNITY_VERSION = "community.quarkus.version";
+    public static final String QUARKUS_CORE_BOM_VERSION = "core.quarkus.version";
     public static final String QUARKUS_PLATFORM_VERSION = "quarkus.platform.version";
     public static final String QUARKUS_PLATFORM_GROUP_ID = "quarkus.platform.group-id";
     /**
@@ -42,7 +43,7 @@ public final class MavenUtils {
     public static final String POM_XML = "pom.xml";
     public static final String TEST_SCOPE = "test";
     public static final String COMPILE_SCOPE = "compile";
-    public static final String QUARKUS_PLATFORM_VERSION_REF = "${" + QUARKUS_PLATFORM_VERSION + "}";
+    public static final String QUARKUS_CORE_BOM_VERSION_REF = "${" + QUARKUS_CORE_BOM_VERSION + "}";
     public static final String QUARKUS_COMMUNITY_VERSION_REF = "${" + QUARKUS_COMMUNITY_VERSION + "}";
     public static final String USE_EXTRACTED_PROPERTIES = "USE-EXTRACTED-PROPERTIES";
     public static final String ANY = "*";
@@ -200,7 +201,7 @@ public final class MavenUtils {
                         if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLine::contains)) {
                             thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
                         } else {
-                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_PLATFORM_VERSION);
+                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_CORE_BOM_VERSION);
                         }
                     }
                     newPomLines[i] = thisLine;
@@ -274,8 +275,8 @@ public final class MavenUtils {
         return TEST_SCOPE.equalsIgnoreCase(dependency.getType());
     }
 
-    public static void setQuarkusPlatformVersion(Dependency dependency) {
-        dependency.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_VERSION + "}");
+    public static void setQuarkusCoreBomVersion(Dependency dependency) {
+        dependency.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_CORE_BOM_VERSION + "}");
     }
 
     public static void setQuarkusCommunityVersion(Dependency dependency) {

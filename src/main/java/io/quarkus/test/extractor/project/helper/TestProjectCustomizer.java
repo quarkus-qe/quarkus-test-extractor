@@ -2,25 +2,20 @@ package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
-import io.quarkus.test.extractor.project.utils.MavenUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_GROUP_ID;
-import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_CORE_BOM_VERSION;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.getTargetProjectDirPath;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 public abstract class TestProjectCustomizer {
 
@@ -95,8 +90,8 @@ public abstract class TestProjectCustomizer {
                 var dependency = new Dependency();
                 dependency.setGroupId("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_GROUP_ID + "}");
                 dependency.setArtifactId("quarkus-bom-quarkus-platform-descriptor");
-                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
-                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
+                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_CORE_BOM_VERSION + "}");
+                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_CORE_BOM_VERSION + "}");
                 dependency.setType("json");
                 model.addDependency(dependency);
             }
@@ -183,7 +178,7 @@ public abstract class TestProjectCustomizer {
                 // required fix for io.quarkus.devtools.commands.CreateProjectPlatformMetadataTest
                 var fileChanger = new FileChanger(project, "src/test/resources/platform-metadata.json");
                 fileChanger.changeContent(fileContent -> fileContent
-                        .replaceAll(Pattern.quote("{project.version}"), "{" + QUARKUS_PLATFORM_VERSION + "}")
+                        .replaceAll(Pattern.quote("{project.version}"), "{" + QUARKUS_CORE_BOM_VERSION + "}")
                         .replaceAll(Pattern.quote("{project.groupId}"), "{" + QUARKUS_PLATFORM_GROUP_ID + "}"));
             }
         };

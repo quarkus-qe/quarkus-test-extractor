@@ -41,7 +41,7 @@ public final class ParentProject {
                 "properties-maven-plugin", "properties-maven-plugin.version", "maven-clean-plugin",
                 "version.clean.plugin", "nexus-staging-maven-plugin", "version.nexus-staging.plugin",
                 "maven-resources-plugin", "version.resources.plugin", "scala-maven-plugin",
-                "scala-maven-plugin.version", "quarkus-extension-maven-plugin", QUARKUS_PLATFORM_VERSION,
+                "scala-maven-plugin.version", "quarkus-extension-maven-plugin", QUARKUS_CORE_BOM_VERSION,
                 "maven-invoker-plugin", "maven-invoker-plugin.version"));
         plugins.put("build-helper-maven-plugin", "build-helper-plugin.version");
         plugins.put("quarkus-platform-bom-maven-plugin", "quarkus-platform-bom-plugin.version");
