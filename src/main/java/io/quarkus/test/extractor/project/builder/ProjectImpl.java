@@ -208,10 +208,10 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     if (isDeploymentArtifact(dependency) && isTestJar(dependency)) {
                         // deployment module signals it is Quarkus core extension module
                         // and when it is a test jar, it is not managed (so far I didn't see Quarkus BOM to manage it)
-                        // so let's just use Quarkus Platform version because that should fit
+                        // so let's just use community Quarkus BOM version because that should fit
                         // also, test-jars are not productized
-                        setQuarkusPlatformVersion(dependency);
-                        extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_PLATFORM_VERSION_REF);
+                        setQuarkusCommunityVersion(dependency);
+                        extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
                     } else if (!isManagedByQuarkusBom(dependency) && !isManagedByTestParent(dependency)) {
                         resolveAndSetDependencyVersion(dependency);
                     } else if (isManagedByQuarkusBomButNotProductPlatformBom(dependency)) {
