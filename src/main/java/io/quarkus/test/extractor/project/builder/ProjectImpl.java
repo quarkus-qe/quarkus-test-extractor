@@ -572,6 +572,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         // RHBQ uses productized plugin and the group id is 'com.redhat.quarkus.platform'
                         // so make the group id configurable
                         plugin.setGroupId("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_GROUP_ID + "}");
+                        plugin.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_CORE_BOM_VERSION + "}");
                     }
                     extractionSummary.addBuildPlugin(plugin, project);
                 });
