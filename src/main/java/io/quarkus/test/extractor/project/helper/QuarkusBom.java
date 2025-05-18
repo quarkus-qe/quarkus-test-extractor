@@ -9,6 +9,8 @@ import org.apache.maven.project.MavenProject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,6 +23,7 @@ public final class QuarkusBom {
 
     private static final String QUARKUS_BOM_ARTIFACT_ID = "quarkus-bom";
     private static final String MANAGED_DEPENDENCIES_FILE_NAME = "quarkus-bom-managed-deps";
+    private static final String STORK_CONFIG_GEN_VERSION_FILE_NAME = "stork-configuration-generator";
     private static final QuarkusBom INSTANCE = create();
     private final Set<String> managementKeys;
     private volatile boolean validated = false;
@@ -76,7 +79,7 @@ public final class QuarkusBom {
         return managementKeys;
     }
 
-    private static void saveToFileSystem(String managementKeys) throws MojoExecutionException {
+    private static void saveToFileSystem(String managementKeys, String storkConfigGenVersion) throws MojoExecutionException {
         try {
             Files.writeString(getManagementKeysPath(), managementKeys, CREATE_NEW);
         } catch (IOException e) {
@@ -84,10 +87,21 @@ public final class QuarkusBom {
                     + "Please make sure that target directory does "
                     + "not exist or is empty", e);
         }
+        try {
+            Files.writeString(getStorkConfigGenVersionPath(), storkConfigGenVersion, CREATE_NEW);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to save 'stork-configuration-generator' version. "
+                    + "Please make sure that target directory does "
+                    + "not exist or is empty", e);
+        }
     }
 
     private static Path getManagementKeysPath() {
         return PluginUtils.TARGET_DIR.resolve(MANAGED_DEPENDENCIES_FILE_NAME);
+    }
+
+    private static Path getStorkConfigGenVersionPath() {
+        return PluginUtils.TARGET_DIR.resolve(STORK_CONFIG_GEN_VERSION_FILE_NAME);
     }
 
     private static String getManagementKeys(MavenProject mavenProject) {
@@ -103,7 +117,16 @@ public final class QuarkusBom {
 
     public static void saveDependencyKeys(MavenProject mavenProject) throws MojoExecutionException {
         createDirectoryStructureIfNotExists();
-        saveToFileSystem(getManagementKeys(mavenProject));
+        saveToFileSystem(getManagementKeys(mavenProject), getStorkConfigGenVersion(mavenProject));
+    }
+
+    private static String getStorkConfigGenVersion(MavenProject mavenProject) {
+        return mavenProject.getDependencyManagement().getDependencies().stream()
+                .filter(d -> "stork-configuration-generator".equalsIgnoreCase(d.getArtifactId())
+                        && "io.smallrye.stork".equalsIgnoreCase(d.getGroupId()))
+                .findFirst()
+                .orElseThrow()
+                .getVersion();
     }
 
     public static boolean isQuarkusBom(String artifactId) {
@@ -112,5 +135,13 @@ public final class QuarkusBom {
 
     public static boolean isManagedByQuarkusBom(Dependency dependency) {
         return INSTANCE.isManagedByQuarkusBomInternal(dependency);
+    }
+
+    public static String getStorkConfigGenVersion() {
+        try {
+            return Files.readString(getStorkConfigGenVersionPath()).trim();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

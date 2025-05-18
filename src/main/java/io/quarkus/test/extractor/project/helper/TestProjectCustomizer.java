@@ -4,6 +4,7 @@ import io.quarkus.test.extractor.project.builder.Project;
 import io.quarkus.test.extractor.project.result.ParentProject;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -35,11 +36,30 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-bouncycastle-fips-jsse", disableInNative()
         ));
 
+        customizers.put("quarkus-integration-test-rest-client-reactive-stork", useFixedStorkConfigGeneratorVersion());
         // we remove this property by default from all modules because it makes a mess depending on what Java
         // was used for the extraction, but VT IT parent actually needs this
         customizers.put("quarkus-virtual-threads-integration-tests-parent", setTargetJavaTo21InProfile());
 
         CUSTOMIZERS = Collections.unmodifiableMap(customizers);
+    }
+
+    private static TestProjectCustomizer useFixedStorkConfigGeneratorVersion() {
+        return new TestProjectCustomizer() {
+            @Override
+            protected void customize(Project project, Model model) {
+                model.getBuild().getPlugins().stream()
+                        .filter(p -> "maven-compiler-plugin".equalsIgnoreCase(p.getArtifactId()))
+                        .findFirst()
+                        .ifPresent(p -> {
+                            var config = (org.codehaus.plexus.util.xml.Xpp3Dom) p.getConfiguration();
+                            var path = config.getChild("annotationProcessorPaths").getChild("path");
+                            var version = new Xpp3Dom("version");
+                            version.setValue(QuarkusBom.getStorkConfigGenVersion());
+                            path.addChild(version);
+                        });
+            }
+        };
     }
 
     private static TestProjectCustomizer setTargetJavaTo21InProfile() {
