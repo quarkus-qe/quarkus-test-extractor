@@ -49,7 +49,8 @@ public final class MavenUtils {
     public static final String ANY = "*";
     public static final String JAR = "jar";    // like in ${project.version}
     public static final String THIS_PROJECT_VERSION = "project.version";
-    public static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor", "quarkus-test-grpc", "quarkus-bom-test");
+    public static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor",
+            "quarkus-test-grpc", "quarkus-bom-test", "quarkus-test-observability");
     // used to avoid automatic substitution when we don't want it
     private static final String MAVEN_PROPERTY_PREFIX = "\\$" + USE_EXTRACTED_PROPERTIES + "\\{";
     private static final String PROPERTY_START = "\\${";
