@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_GROUP_ID;
 import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_CORE_BOM_VERSION;
+import static io.quarkus.test.extractor.project.utils.MavenUtils.QUARKUS_PLATFORM_VERSION;
 import static io.quarkus.test.extractor.project.utils.PluginUtils.getTargetProjectDirPath;
 
 public abstract class TestProjectCustomizer {
@@ -110,8 +111,8 @@ public abstract class TestProjectCustomizer {
                 var dependency = new Dependency();
                 dependency.setGroupId("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_GROUP_ID + "}");
                 dependency.setArtifactId("quarkus-bom-quarkus-platform-descriptor");
-                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_CORE_BOM_VERSION + "}");
-                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_CORE_BOM_VERSION + "}");
+                dependency.setVersion("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
+                dependency.setClassifier("$USE-EXTRACTED-PROPERTIES{" + QUARKUS_PLATFORM_VERSION + "}");
                 dependency.setType("json");
                 model.addDependency(dependency);
             }

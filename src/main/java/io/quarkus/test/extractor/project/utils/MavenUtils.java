@@ -279,6 +279,13 @@ public final class MavenUtils {
         return TEST_SCOPE.equalsIgnoreCase(dependency.getType());
     }
 
+    public static void setQuarkusPlatformVersion(Dependency dependency) {
+        dependency.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_VERSION + "}");
+        if (dependency.getClassifier() != null) {
+            dependency.setClassifier(dependency.getVersion());
+        }
+    }
+
     public static void setQuarkusCoreBomVersion(Dependency dependency) {
         dependency.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_CORE_BOM_VERSION + "}");
     }

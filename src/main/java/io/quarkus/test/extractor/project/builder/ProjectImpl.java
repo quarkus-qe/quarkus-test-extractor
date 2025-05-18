@@ -294,6 +294,9 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     if (!isManagedByQuarkusBom(dependency)) {
                         if (COMMUNITY_DEPENDENCIES.contains(dependency.getArtifactId())) {
                             setQuarkusCommunityVersion(dependency);
+                        } else if ("quarkus-maven-plugin".equalsIgnoreCase(dependency.getArtifactId())
+                                || "quarkus-bom-quarkus-platform-descriptor".equalsIgnoreCase(dependency.getArtifactId())) {
+                            setQuarkusPlatformVersion(dependency);
                         } else {
                             setQuarkusCoreBomVersion(dependency);
                         }
