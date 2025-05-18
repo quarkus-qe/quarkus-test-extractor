@@ -150,7 +150,9 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             managedDependencies.forEach(ParentProject::correctGroupIdIfNecessary);
             managedDependencies.stream().filter(ParentProject::copyAsIsContainsArtifactId).forEach(d -> d.setVersion(version()));
             extractionSummary.addProjectWithDependencyManagement(dependencyManagement, project);
-            return dependencyManagement.clone();
+            var clone = dependencyManagement.clone();
+            clone.setDependencies(managedDependencies);
+            return clone;
         }
         return null;
     }
@@ -592,13 +594,23 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                         }
                         plugin.setVersion(pluginVersion);
                     }
-                    if (PluginUtils.isIoQuarkusMavenPlugin(plugin.getArtifactId(), plugin.getGroupId())) {
+                    if (PluginUtils.isQuarkusMavenPlugin(plugin.getArtifactId(), plugin.getGroupId())) {
                         // RHBQ uses productized plugin and the group id is 'com.redhat.quarkus.platform'
                         // so make the group id configurable
                         plugin.setGroupId("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_GROUP_ID + "}");
                         plugin.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_VERSION + "}");
                     }
                     extractionSummary.addBuildPlugin(plugin, project);
+                });
+            }
+            if (build.getPluginManagement() != null && build.getPluginManagement().getPlugins() != null) {
+                build.getPluginManagement().getPlugins().forEach(plugin -> {
+                    if (PluginUtils.isQuarkusMavenPlugin(plugin.getArtifactId(), plugin.getGroupId())) {
+                        // RHBQ uses productized plugin and the group id is 'com.redhat.quarkus.platform'
+                        // so make the group id configurable
+                        plugin.setGroupId("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_GROUP_ID + "}");
+                        plugin.setVersion("$" + USE_EXTRACTED_PROPERTIES + "{" + QUARKUS_PLATFORM_VERSION + "}");
+                    }
                 });
             }
         }

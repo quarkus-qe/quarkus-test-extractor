@@ -194,19 +194,17 @@ public final class MavenUtils {
                         thisLine = originalLine;
                         // this allows to use productized version of Quarkus Maven plugin
                         newPomLines[i - 1] = previousLine.replaceAll("io\\.quarkus", "\\${" + QUARKUS_PLATFORM_GROUP_ID + "}");
+                    } else if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLine::contains)) {
+                        thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
                     } else if (isManagedByTestParent(toDependency(previousLine))) {
                         // basically, if we manage this dependency, we want it to have our project version
                         thisLine = originalLine;
                     } else {
-                        if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLine::contains)) {
-                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
+                        boolean isCreateExtensionRuntimeModuleConfig = originalLine.contains("${project.groupId}:${project.artifactId}-deployment");
+                        if (!isCreateExtensionRuntimeModuleConfig) {
+                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_CORE_BOM_VERSION);
                         } else {
-                            boolean isCreateExtensionRuntimeModuleConfig = originalLine.contains("${project.groupId}:${project.artifactId}-deployment");
-                            if (!isCreateExtensionRuntimeModuleConfig) {
-                                thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_CORE_BOM_VERSION);
-                            } else {
-                                thisLine = originalLine;
-                            }
+                            thisLine = originalLine;
                         }
                     }
                     newPomLines[i] = thisLine;
@@ -235,7 +233,7 @@ public final class MavenUtils {
     }
 
     private static boolean isIoQuarkusMavenPlugin(Dependency dependency) {
-        return dependency != null && PluginUtils.isIoQuarkusMavenPlugin(dependency.getArtifactId(), dependency.getGroupId());
+        return dependency != null && PluginUtils.isQuarkusMavenPlugin(dependency.getArtifactId(), dependency.getGroupId());
     }
 
     private static Dependency toDependency(String line) {
