@@ -198,7 +198,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 setQuarkusCoreBomVersion(self);
             }
             result.add(self);
-            mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
+            originalDependencies.forEach(dep -> {
                 var dependency = dep.clone();
                 // some test scope dependencies probably are not managed by Quarkus BOM
                 // but are managed due to Quarkus Build Parent dependency management
@@ -221,7 +221,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 if (hasThisProjectVersion(dependency)) {
                     dependency.setVersion(null);
                     if (!isManagedByQuarkusBom(dependency)) {
-                        setQuarkusCoreBomVersion(dependency);
+                        if (COMMUNITY_DEPENDENCIES.contains(dependency.getArtifactId())) {
+                            setQuarkusCommunityVersion(dependency);
+                        } else {
+                            setQuarkusCoreBomVersion(dependency);
+                        }
                     }
                 }
 
@@ -262,7 +266,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             // 'quarkus-integration-test-gradle-plugin' integration module
             originalDependencies.removeIf(dep -> isQuarkusOwnDependency(dep, version()) && isPomPackageType(dep));
 
-            mavenProject.getOriginalModel().getDependencies().forEach(dep -> {
+            originalDependencies.forEach(dep -> {
                 var dependency = dep.clone();
                 if (COMPILE_SCOPE.equalsIgnoreCase(dependency.getScope())) {
                     // use default scope, usually developers doesn't type it either
@@ -286,7 +290,11 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 if (hasThisProjectVersion(dependency)) {
                     dependency.setVersion(null);
                     if (!isManagedByQuarkusBom(dependency)) {
-                        setQuarkusCoreBomVersion(dependency);
+                        if (COMMUNITY_DEPENDENCIES.contains(dependency.getArtifactId())) {
+                            setQuarkusCommunityVersion(dependency);
+                        } else {
+                            setQuarkusCoreBomVersion(dependency);
+                        }
                     }
                 }
 
@@ -493,13 +501,13 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
         } else if (isProductizedButNotManaged(dependency)) {
             setQuarkusCoreBomVersion(dependency);
             extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_CORE_BOM_VERSION_REF);
+        } else if (COMMUNITY_DEPENDENCIES.contains(dependency.getArtifactId())) {
+            setQuarkusCommunityVersion(dependency);
+            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
         } else if (actualDependencyVersion == null) {
             setQuarkusCoreBomVersion(dependency);
             extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_CORE_BOM_VERSION_REF);
         } else if (actualDependencyVersion.equalsIgnoreCase(version())) {
-            setQuarkusCommunityVersion(dependency);
-            extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
-        } else if (COMMUNITY_DEPENDENCIES.contains(dependency.getArtifactId())) {
             setQuarkusCommunityVersion(dependency);
             extractionSummary.addNotManagedDependency(dependency, this, QUARKUS_COMMUNITY_VERSION_REF);
         } else {
