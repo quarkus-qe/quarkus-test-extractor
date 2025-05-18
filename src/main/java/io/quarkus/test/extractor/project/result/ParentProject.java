@@ -69,7 +69,7 @@ public final class ParentProject {
                 .anyMatch(d -> dependency.getArtifactId().equalsIgnoreCase(d.getArtifactId()));
     }
 
-    private static boolean copyAsIsContainsArtifactId(Dependency dependency) {
+    public static boolean copyAsIsContainsArtifactId(Dependency dependency) {
         return COPY_AS_IS_ARTIFACT_IDS.contains(dependency.getArtifactId());
     }
 

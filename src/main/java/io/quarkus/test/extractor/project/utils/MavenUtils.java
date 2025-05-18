@@ -49,7 +49,7 @@ public final class MavenUtils {
     public static final String ANY = "*";
     public static final String JAR = "jar";    // like in ${project.version}
     public static final String THIS_PROJECT_VERSION = "project.version";
-    public static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor", "quarkus-test-grpc");
+    public static final Set<String> COMMUNITY_DEPENDENCIES = Set.of("quarkus-grpc-protoc-plugin", "quarkus-extension-processor", "quarkus-test-grpc", "quarkus-bom-test");
     // used to avoid automatic substitution when we don't want it
     private static final String MAVEN_PROPERTY_PREFIX = "\\$" + USE_EXTRACTED_PROPERTIES + "\\{";
     private static final String PROPERTY_START = "\\${";
@@ -201,7 +201,12 @@ public final class MavenUtils {
                         if (COMMUNITY_DEPENDENCIES.stream().anyMatch(previousLine::contains)) {
                             thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_COMMUNITY_VERSION);
                         } else {
-                            thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_CORE_BOM_VERSION);
+                            boolean isCreateExtensionRuntimeModuleConfig = originalLine.contains("${project.groupId}:${project.artifactId}-deployment");
+                            if (!isCreateExtensionRuntimeModuleConfig) {
+                                thisLine = originalLine.replaceAll(THIS_PROJECT_VERSION, QUARKUS_CORE_BOM_VERSION);
+                            } else {
+                                thisLine = originalLine;
+                            }
                         }
                     }
                     newPomLines[i] = thisLine;

@@ -148,7 +148,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                 .toList();
         if (!managedDependencies.isEmpty()) {
             managedDependencies.forEach(ParentProject::correctGroupIdIfNecessary);
-            // really?? that is suspicious, let's add it to summary so that someone can inspect this fact manually
+            managedDependencies.stream().filter(ParentProject::copyAsIsContainsArtifactId).forEach(d -> d.setVersion(version()));
             extractionSummary.addProjectWithDependencyManagement(dependencyManagement, project);
             return dependencyManagement.clone();
         }
@@ -298,6 +298,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
             });
             result.forEach(ParentProject::correctGroupIdIfNecessary);
         }
+        result.stream().filter(ParentProject::copyAsIsContainsArtifactId).forEach(d -> d.setVersion(null));
         return List.copyOf(result);
     }
 
@@ -463,6 +464,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
         var model = mavenProject.getOriginalModel().clone();
         model.setBuild(build());
         model.setDependencies(dependencies());
+        model.setDependencyManagement(prepareDependencyManagement(model.getDependencyManagement(), this));
         model.setProfiles(profiles());
         return model;
     }
