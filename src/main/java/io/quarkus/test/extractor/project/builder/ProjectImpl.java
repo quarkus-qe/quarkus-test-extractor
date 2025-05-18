@@ -530,6 +530,7 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     return true;
                 }
                 if ("maven-compiler-plugin".equalsIgnoreCase(plugin.getArtifactId())) {
+                    plugin.setVersion("$USE-EXTRACTED-PROPERTIES{version.compiler.plugin}");
                     // if it is only plugin with no configuration, we don't need it
                     // if only 'quarkus-extension-processor' annotation processor is present
                     // we don't want it, otherwise, we need to copy modified plugin
@@ -538,11 +539,24 @@ record ProjectImpl(MavenProject mavenProject, String relativePath, boolean exten
                     boolean noExecutions = plugin.getExecutions() == null || plugin.getExecutions().isEmpty();
                     if (noDeps && noConfig && noExecutions) {
                         return true;
-                    } else if (extensionTestModule) {
-                        if (plugin.getExecutions().size() == 1) {
-                            var pluginExecution = plugin.getExecutions().get(0);
-                            return "default-compile".equalsIgnoreCase(pluginExecution.getId());
+                    } else {
+                        // that's because this extension module now has '-AgenerateDoc=false' compiler args
+                        // in the default profile and I want to keep them
+                        boolean isNotItExtensionExtModule = !targetRelativePath().contains("integration-tests/test-extension/extension/");
+                        if (isNotItExtensionExtModule) {
+                            if (plugin.getExecutions().size() == 1) {
+                                var pluginExecution = plugin.getExecutions().get(0);
+                                return "default-compile".equalsIgnoreCase(pluginExecution.getId());
+                            }
                         }
+                    }
+                }
+                if ("quarkus-extension-maven-plugin".equalsIgnoreCase(plugin.getArtifactId())) {
+                    boolean noDeps = plugin.getDependencies() == null || plugin.getDependencies().isEmpty();
+                    boolean noConfig = plugin.getConfiguration() == null;
+                    boolean noExecutions = plugin.getExecutions() == null || plugin.getExecutions().isEmpty();
+                    if (noDeps && noConfig && noExecutions) {
+                        return true;
                     }
                 }
                 return false;
