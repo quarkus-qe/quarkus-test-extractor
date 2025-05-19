@@ -37,7 +37,10 @@ public abstract class TestProjectCustomizer {
                 "quarkus-integration-test-bouncycastle-fips-jsse", disableInNative()
         ));
 
-        customizers.put("quarkus-integration-test-rest-client-reactive-stork", useFixedStorkConfigGeneratorVersion());
+        customizers.put("quarkus-integration-test-rest-client-reactive-stork",
+                useFixedVersionInMvnCompilerPluginAnnotationProcessorPath("io.smallrye.stork:stork-configuration-generator"));
+        customizers.put("quarkus-integration-test-hibernate-orm-jpamodelgen",
+                useFixedVersionInMvnCompilerPluginAnnotationProcessorPath("org.hibernate.orm:hibernate-jpamodelgen"));
         // we remove this property by default from all modules because it makes a mess depending on what Java
         // was used for the extraction, but VT IT parent actually needs this
         customizers.put("quarkus-virtual-threads-integration-tests-parent", setTargetJavaTo21InProfile());
@@ -45,7 +48,9 @@ public abstract class TestProjectCustomizer {
         CUSTOMIZERS = Collections.unmodifiableMap(customizers);
     }
 
-    private static TestProjectCustomizer useFixedStorkConfigGeneratorVersion() {
+    // sets version to the first 'path' XML element of the compiler mvn plugin configuration,
+    // because when not fixed, it fails with RHBQ
+    private static TestProjectCustomizer useFixedVersionInMvnCompilerPluginAnnotationProcessorPath(String depManagementKey) {
         return new TestProjectCustomizer() {
             @Override
             protected void customize(Project project, Model model) {
@@ -56,7 +61,7 @@ public abstract class TestProjectCustomizer {
                             var config = (org.codehaus.plexus.util.xml.Xpp3Dom) p.getConfiguration();
                             var path = config.getChild("annotationProcessorPaths").getChild("path");
                             var version = new Xpp3Dom("version");
-                            version.setValue(QuarkusBom.getStorkConfigGenVersion());
+                            version.setValue(QuarkusBom.getVersionForDependencyKey(depManagementKey));
                             path.addChild(version);
                         });
             }

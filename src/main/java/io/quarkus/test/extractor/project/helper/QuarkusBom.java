@@ -9,8 +9,6 @@ import org.apache.maven.project.MavenProject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +21,8 @@ public final class QuarkusBom {
 
     private static final String QUARKUS_BOM_ARTIFACT_ID = "quarkus-bom";
     private static final String MANAGED_DEPENDENCIES_FILE_NAME = "quarkus-bom-managed-deps";
-    private static final String STORK_CONFIG_GEN_VERSION_FILE_NAME = "stork-configuration-generator";
+    private static final String STORK_CONFIG_GEN_VERSION_FILE_NAME = "stork-configuration-generator-version";
+    private static final String HIBERNATE_JPA_MODEL_GEN_VERSION_FILE_NAME = "hibernate-jpamodelgen-version";
     private static final QuarkusBom INSTANCE = create();
     private final Set<String> managementKeys;
     private volatile boolean validated = false;
@@ -79,7 +78,8 @@ public final class QuarkusBom {
         return managementKeys;
     }
 
-    private static void saveToFileSystem(String managementKeys, String storkConfigGenVersion) throws MojoExecutionException {
+    private static void saveToFileSystem(String managementKeys, String storkConfigGenVersion,
+                                         String hibernateJpaModelGenVersion) throws MojoExecutionException {
         try {
             Files.writeString(getManagementKeysPath(), managementKeys, CREATE_NEW);
         } catch (IOException e) {
@@ -94,6 +94,13 @@ public final class QuarkusBom {
                     + "Please make sure that target directory does "
                     + "not exist or is empty", e);
         }
+        try {
+            Files.writeString(getHibernateJpaModelGenVersionPath(), hibernateJpaModelGenVersion, CREATE_NEW);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to save 'hibernate-jpamodelgen' version. "
+                    + "Please make sure that target directory does "
+                    + "not exist or is empty", e);
+        }
     }
 
     private static Path getManagementKeysPath() {
@@ -102,6 +109,10 @@ public final class QuarkusBom {
 
     private static Path getStorkConfigGenVersionPath() {
         return PluginUtils.TARGET_DIR.resolve(STORK_CONFIG_GEN_VERSION_FILE_NAME);
+    }
+
+    private static Path getHibernateJpaModelGenVersionPath() {
+        return PluginUtils.TARGET_DIR.resolve(HIBERNATE_JPA_MODEL_GEN_VERSION_FILE_NAME);
     }
 
     private static String getManagementKeys(MavenProject mavenProject) {
@@ -117,13 +128,15 @@ public final class QuarkusBom {
 
     public static void saveDependencyKeys(MavenProject mavenProject) throws MojoExecutionException {
         createDirectoryStructureIfNotExists();
-        saveToFileSystem(getManagementKeys(mavenProject), getStorkConfigGenVersion(mavenProject));
+        saveToFileSystem(getManagementKeys(mavenProject),
+                getManagedArtifactVersion(mavenProject, "io.smallrye.stork", "stork-configuration-generator"),
+                getManagedArtifactVersion(mavenProject, "org.hibernate.orm", "hibernate-jpamodelgen"));
     }
 
-    private static String getStorkConfigGenVersion(MavenProject mavenProject) {
+    private static String getManagedArtifactVersion(MavenProject mavenProject, String groupId, String artifactId) {
         return mavenProject.getDependencyManagement().getDependencies().stream()
-                .filter(d -> "stork-configuration-generator".equalsIgnoreCase(d.getArtifactId())
-                        && "io.smallrye.stork".equalsIgnoreCase(d.getGroupId()))
+                .filter(d -> artifactId.equalsIgnoreCase(d.getArtifactId())
+                        && groupId.equalsIgnoreCase(d.getGroupId()))
                 .findFirst()
                 .orElseThrow()
                 .getVersion();
@@ -137,9 +150,18 @@ public final class QuarkusBom {
         return INSTANCE.isManagedByQuarkusBomInternal(dependency);
     }
 
-    public static String getStorkConfigGenVersion() {
+    public static String getVersionForDependencyKey(String depManagementKey) {
+        if ("io.smallrye.stork:stork-configuration-generator".equalsIgnoreCase(depManagementKey)) {
+            return loadPath(getStorkConfigGenVersionPath());
+        } if ("org.hibernate.orm:hibernate-jpamodelgen".equalsIgnoreCase(depManagementKey)) {
+            return loadPath(getHibernateJpaModelGenVersionPath());
+        }
+        throw new IllegalArgumentException("Unsupported dependency key: " + depManagementKey);
+    }
+
+    private static String loadPath(Path path) {
         try {
-            return Files.readString(getStorkConfigGenVersionPath()).trim();
+            return Files.readString(path).trim();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
