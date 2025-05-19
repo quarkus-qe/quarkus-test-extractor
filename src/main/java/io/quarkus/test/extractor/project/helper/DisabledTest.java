@@ -55,7 +55,14 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             new DisabledTest("src/test/java/io/quarkus/gradle/CompileOnlyDependencyFlagsTest.java",
                     Set.of("quarkus-integration-test-gradle-plugin")),
             new DisabledTest("src/test/java/io/quarkus/gradle/QuarkusPluginFunctionalTest.java",
-                    Set.of("quarkus-integration-test-gradle-plugin"))
+                    Set.of("quarkus-integration-test-gradle-plugin")),
+            // next 2 tests works with community Quarkus, fails with RHBQ when it tries to resolve
+            // io.quarkiverse.qute.web:quarkus-qute-web:jar:codestarts:3.3.0 locally (the test is configured to go offline)
+            // but this dependency is nowhere to be find with RHBQ and I can't see where is it referred from anywhere
+            new DisabledTest("src/test/java/io/quarkus/maven/AddExtensionMojoTest.java",
+                    Set.of("quarkus-integration-test-maven")),
+            new DisabledTest("src/test/java/io/quarkus/maven/AddExtensionsMojoTest.java",
+                    Set.of("quarkus-integration-test-maven"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
