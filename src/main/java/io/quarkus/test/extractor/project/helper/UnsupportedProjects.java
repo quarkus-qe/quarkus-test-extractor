@@ -2,6 +2,7 @@ package io.quarkus.test.extractor.project.helper;
 
 import io.quarkus.test.extractor.project.builder.Project;
 
+import java.io.File;
 import java.util.Set;
 
 public class UnsupportedProjects {
@@ -14,13 +15,18 @@ public class UnsupportedProjects {
             // following projects need more investigations before we start support them
             "integration-tests/test-extension", "integration-tests/grpc-external-proto-test",
             // fails and gelf is not supported, so I did not investigate
-            "integration-tests/logging-gelf"
+            "integration-tests/logging-gelf",
+            // these tests pass with Quarkus community but fail with RHBQ, customizations would be extensive,
+            // we need to fix the tests in Quarkus main project instead of doing it here, and then we can enable
+            // the module for streams in which we will fix it
+            "integration-tests/devtools/"
     );
 
     public static boolean isNotSupportedProject(Project project) {
         String targetRelativePath = project.targetRelativePath();
         for (String unsupportedProject : UNSUPPORTED_PROJECTS) {
-            if (targetRelativePath.contains(unsupportedProject)) {
+            if (targetRelativePath.contains(unsupportedProject)
+                    || (targetRelativePath + File.separator).contains(unsupportedProject)) {
                 return true;
             }
         }
