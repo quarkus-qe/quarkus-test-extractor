@@ -62,7 +62,12 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             new DisabledTest("src/test/java/io/quarkus/maven/AddExtensionMojoTest.java",
                     Set.of("quarkus-integration-test-maven")),
             new DisabledTest("src/test/java/io/quarkus/maven/AddExtensionsMojoTest.java",
-                    Set.of("quarkus-integration-test-maven"))
+                    Set.of("quarkus-integration-test-maven")),
+            // there is wrong 'user.home' inside actual application, it is probably related with the fact that creating
+            // the application model fails over resolving 'quarkus-devui-deployment'
+            // it could probably be fixed
+            new DisabledTest("src/test/java/io/quarkus/devui/devmcp/DevMcpTest.java",
+                    Set.of("quarkus-devui-deployment"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
