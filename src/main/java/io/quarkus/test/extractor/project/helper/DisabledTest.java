@@ -71,7 +71,9 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             // this looks like a class loader issue (which is probably a core cause of many disabled test failures above)
             // when io.smallrye.jwt.util.ResourceUtils#getAsClasspathResource is loading a file in a build step in a DEV
             // mode test, it doesn't see the test class path, but actual application path
-        new DisabledTest("src/test/java/io/quarkus/jwt/test/dev/SmallryeJwtPersistentColdStartupSignedTest.java",
+            new DisabledTest("src/test/java/io/quarkus/jwt/test/dev/SmallryeJwtPersistentColdStartupSignedTest.java",
+                    Set.of("quarkus-smallrye-jwt-deployment")),
+            new DisabledTest("src/test/java/io/quarkus/jwt/test/dev/SmallryeJwtPersistentColdStartupEncryptedTest.java",
                     Set.of("quarkus-smallrye-jwt-deployment"))
     );
 
