@@ -67,7 +67,12 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             // the application model fails over resolving 'quarkus-devui-deployment'
             // it could probably be fixed
             new DisabledTest("src/test/java/io/quarkus/devui/devmcp/DevMcpTest.java",
-                    Set.of("quarkus-devui-deployment"))
+                    Set.of("quarkus-devui-deployment")),
+            // this looks like a class loader issue (which is probably a core cause of many disabled test failures above)
+            // when io.smallrye.jwt.util.ResourceUtils#getAsClasspathResource is loading a file in a build step in a DEV
+            // mode test, it doesn't see the test class path, but actual application path
+        new DisabledTest("src/test/java/io/quarkus/jwt/test/dev/SmallryeJwtPersistentColdStartupSignedTest.java",
+                    Set.of("quarkus-smallrye-jwt-deployment"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
