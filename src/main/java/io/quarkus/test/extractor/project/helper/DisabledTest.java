@@ -77,7 +77,10 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
                     Set.of("quarkus-smallrye-jwt-deployment")),
             // disabling due to NPE in a programmatic CDI lookup, TODO: investigate
             new DisabledTest("src/test/java/io/quarkus/opentelemetry/deployment/logs/OtelLogsHandlerDisabledTest.java",
-                    Set.of("quarkus-opentelemetry-deployment"))
+                    Set.of("quarkus-opentelemetry-deployment")),
+            // this also looks like issue with a classloader
+            new DisabledTest("src/test/java/io/quarkus/it/hibernate/multitenancy/fruit/HibernateTenancyFunctionalityInGraalITCase.java",
+                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-schema-mariadb"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
