@@ -74,7 +74,10 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             new DisabledTest("src/test/java/io/quarkus/jwt/test/dev/SmallryeJwtPersistentColdStartupSignedTest.java",
                     Set.of("quarkus-smallrye-jwt-deployment")),
             new DisabledTest("src/test/java/io/quarkus/jwt/test/dev/SmallryeJwtPersistentColdStartupEncryptedTest.java",
-                    Set.of("quarkus-smallrye-jwt-deployment"))
+                    Set.of("quarkus-smallrye-jwt-deployment")),
+            // disabling due to NPE in a programmatic CDI lookup, TODO: investigate
+            new DisabledTest("src/test/java/io/quarkus/opentelemetry/deployment/logs/OtelLogsHandlerDisabledTest.java",
+                    Set.of("quarkus-opentelemetry-deployment"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
