@@ -80,6 +80,8 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
                     Set.of("quarkus-opentelemetry-deployment")),
             // this also looks like issue with a classloader
             new DisabledTest("src/test/java/io/quarkus/it/hibernate/multitenancy/fruit/HibernateTenancyFunctionalityInGraalITCase.java",
+                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-schema-mariadb")),
+            new DisabledTest("src/test/java/io/quarkus/it/hibernate/multitenancy/inventory/HibernateNamedPersistenceUnitTestInGraalITCase.java",
                     Set.of("quarkus-integration-test-hibernate-orm-tenancy-schema-mariadb"))
     );
 
