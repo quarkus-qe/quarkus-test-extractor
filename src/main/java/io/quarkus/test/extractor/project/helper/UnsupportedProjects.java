@@ -22,7 +22,7 @@ public class UnsupportedProjects {
             "integration-tests/devtools/",
             // seems like Oracle is not starting and I don't have time to investigate
             // TODO: this should be fixable
-            "integration-tests/jpa-oracle"
+            "integration-tests/jpa-oracle", "integration-tests/hibernate-reactive-oracle"
     );
 
     public static boolean isNotSupportedProject(Project project) {
