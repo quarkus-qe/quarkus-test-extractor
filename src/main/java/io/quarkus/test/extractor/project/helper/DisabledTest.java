@@ -82,7 +82,10 @@ public record DisabledTest(String testClassPath, Set<String> artifactIds) {
             new DisabledTest("src/test/java/io/quarkus/it/hibernate/multitenancy/fruit/HibernateTenancyFunctionalityInGraalITCase.java",
                     Set.of("quarkus-integration-test-hibernate-orm-tenancy-schema-mariadb")),
             new DisabledTest("src/test/java/io/quarkus/it/hibernate/multitenancy/inventory/HibernateNamedPersistenceUnitTestInGraalITCase.java",
-                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-schema-mariadb", "quarkus-integration-test-hibernate-orm-tenancy"))
+                    Set.of("quarkus-integration-test-hibernate-orm-tenancy-schema-mariadb", "quarkus-integration-test-hibernate-orm-tenancy")),
+            // TODO: enable when https://github.com/quarkusio/quarkus/issues/50524 is fixed
+            new DisabledTest("src/test/java/io/quarkus/virtual/graphql/RunOnVirtualThreadIT.java",
+                    Set.of("quarkus-integration-test-virtual-threads-graphql", "quarkus-virtual-threads-integration-tests-parent"))
     );
 
     public static boolean hasProjectDisabledTests(String artifactId) {
