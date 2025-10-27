@@ -26,7 +26,7 @@ public final class ParentProject {
             "integration-test-extension-that-defines-junit-test-extensions-deployment",
             "integration-test-extension-that-defines-junit-test-extensions",
             "integration-test-extension-that-defines-junit-test-extensions-parent",
-            "quarkus-arc-test-supplement", "quarkus-security-test-utils",
+            "quarkus-security-test-utils",
             "quarkus-integration-test-common-jpa-entities");
     private static final Model MAVEN_MODEL = MavenUtils.getMavenModel("pom-test-parent-skeleton.xml");
     private static final Map<String, String> PLUGIN_ARTIFACT_ID_TO_VERSION_PROP;
