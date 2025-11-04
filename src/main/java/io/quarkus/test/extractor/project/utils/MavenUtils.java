@@ -390,8 +390,9 @@ public final class MavenUtils {
                         .replaceAll(Pattern.quote(GET_VERSION), "System.getProperty(\"community.quarkus.version\")");
             }
             // TODO: we should investigate why these are not productized / resolved dynamically by Quarkus Test FW
-            if (classContent.contains("quarkus-container-image-docker") || classContent.contains("quarkus-minikube")
-                || classContent.contains("quarkus-container-image-jib") || classContent.contains("quarkus-flyway")) {
+            if (classContent.contains("quarkus-arc-test-supplement") || classContent.contains("quarkus-container-image-docker")
+                    || classContent.contains("quarkus-minikube") || classContent.contains("quarkus-container-image-jib")
+                    || classContent.contains("quarkus-flyway")) {
                 return classContent
                         .replaceAll(Pattern.quote(GET_VERSION), "System.getProperty(\"community.quarkus.version\")");
             }
