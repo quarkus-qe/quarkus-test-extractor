@@ -63,7 +63,7 @@ run_tests() {
   mvn clean install -V -B --no-transfer-progress -DskipITs -DskipTests $MVN_INSTALL_ARGS
   
   echo "Running tests"
-  mvn clean verify -V -B --no-transfer-progress -Dtest-containers -Dstart-containers $OUTER_MVN_ADDITIONAL_ARGS
+  mvn clean verify -V -B --no-transfer-progress --fail-at-end -Dtest-containers -Dstart-containers $OUTER_MVN_ADDITIONAL_ARGS
 }
 
 addModuleToPomFile() {
